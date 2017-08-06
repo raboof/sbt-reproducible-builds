@@ -19,12 +19,6 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
         .addFileStripper("META-INF/maven/\\S*/pom.properties", new PomPropertiesStripper())
         .strip(bin, out)
       out
-    },
-    commands += helloCommand
-  )
-  lazy val helloCommand =
-    Command.command("hello") { (state: State) =>
-      println("Hi!")
-      state
     }
+  )
 }

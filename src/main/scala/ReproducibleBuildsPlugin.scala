@@ -11,8 +11,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
   override def requires: Plugins = JvmPlugin
 
   override lazy val projectSettings = Seq(
-    packageBin in Compile := {
-      val bin = (packageBin in Compile).value
+    packageBin in (Compile, packageBin) ~= { bin =>
       val out = new File(bin.getCanonicalPath + "_")
       new ZipStripper()
         .addFileStripper("META-INF/MANIFEST.MF", new ManifestStripper())

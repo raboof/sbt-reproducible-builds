@@ -8,7 +8,6 @@ apply the strippers from https://github.com/Zlika/reproducible-build-maven-plugi
 Usage
 =====
 
-* check out https://github.com/raboof/reproducible-build-maven-plugin and `mvn install -f pom.standalone.xml`.
 * Check out this repository and do `sbt publishLocal`
 * Then add to your `project/plugins.sbt`: `addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.1-SNAPSHOT")`
 * And to `build.sbt`: `enablePlugins(ReproducibleBuildsPlugin)`

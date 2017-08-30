@@ -2,6 +2,8 @@ sbtPlugin := true
 
 organization := "net.bzzt"
 
+scalaVersion := "2.10.6"
+
 version := "0.2-SNAPSHOT"
 
 // Based on https://github.com/raboof/reproducible-build-maven-plugin

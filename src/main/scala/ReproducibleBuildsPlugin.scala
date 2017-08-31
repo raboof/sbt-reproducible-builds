@@ -1,8 +1,8 @@
 package net.bzzt.reproduciblebuilds
 
-import sbt._
-import Keys._
-import plugins.JvmPlugin
+import sbt.{ AutoPlugin, Compile, Plugins, File}
+import sbt.Keys._
+import sbt.plugins.JvmPlugin
 
 import io.github.zlika.reproducible._
 

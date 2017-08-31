@@ -8,7 +8,25 @@ apply the strippers from https://github.com/Zlika/reproducible-build-maven-plugi
 Usage
 =====
 
-* Check out this repository and do `sbt publishLocal`
-* Then add to your `project/plugins.sbt`: `addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.2")`
-* And to `build.sbt`: `enablePlugins(ReproducibleBuildsPlugin)`
+Then add to your `project/plugins.sbt`:
 
+```
+addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.3")
+```
+
+And to `build.sbt`:
+
+```
+enablePlugins(ReproducibleBuildsPlugin)
+```
+
+Drinking our own champagne
+==========================
+
+From version 0.3 onwards, `sbt-reproducible-builds` should itself be
+reproducible in the sense that building the same git tag should produce the
+exact same binary.
+
+When this is not the case, this is to be considered a bug and a bug report with
+the binary and information about any peculiarities of the build system would be
+greatly appreciated!

@@ -9,6 +9,6 @@ Usage
 =====
 
 * Check out this repository and do `sbt publishLocal`
-* Then add to your `project/plugins.sbt`: `addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.1-SNAPSHOT")`
+* Then add to your `project/plugins.sbt`: `addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.2")`
 * And to `build.sbt`: `enablePlugins(ReproducibleBuildsPlugin)`
 

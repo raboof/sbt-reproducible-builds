@@ -3,3 +3,18 @@ jdk: oraclejdk8
 script:
   - sbt ^test ^publishLocal
   - md5sum target/scala-*/sbt-*/*.jar_
+
+deploy:
+  provider: script
+  script:
+    - sbt ^publish
+  on:
+    tags: true
+    repo: raboof/sbt-reproducible-builds
+
+env:
+  global:
+    # encrypt with: travis encrypt BINTRAY_USER=...
+    - secure: "JCNESGTsFW5tC0LXbYIyH1LBoy9InRcY05FuYL3nTiK73CyQODcJa028BfzXnhC6FZSAMcHYQaKzShs81yd0bX0vsTGw1FHPyCtBrASPsEDiHJhVKUuMd19dXD/uzvmV7jPncBo95TBo8eIFQLCuL527UOdb5rZlZPAQNxcf7JXdBtMA/hkPO63QnabwrLegQhqqk0mhuMqWB1CUG0xKPBRQveiqFv2k6ue4ZBMgpzQUf02W2KrR8cdWhKS6F2URJNivJxgxoh/Xb049Ptys65+/QjrGTFIpOnArfHYou/fBt85/zE+TXk5nvsPN0QbmzOQxTnqeLeY/DDzgEQPtYE25+5j195PpfJ2w+3S3dEFCkSXBcllouW4BobbjWJBCpfhHQioFvGXrFKyYJCEYSeg9Azy0MstL49nUP6B9gK4ph+Pw4OP5v/vv8G+V/64cqRxXfIkGe0P3KHmKSPu2ebYZAXFpj8IbI+CZ+55/tLBadiO1fILQiYBg9lv41YTCR3jltKtEax8bq3Us0uo6ZHeRB77jP6nB4+OwEB8lXW+uPZw6BBdmB7zA55IlDryOrQkqdqWYX+5UJIZ53gl9gzAp0/3+K2UmL858bx6KBgRDyhuzKnY7ee9vuRW3g43vmcjh9Y2znMd1S+6y4KgaMN/ZKCzrfj8KYI33m95ldSU="
+    # encrypt with: travis encrypt BINTRAY_PASS=...
+    - secure: "DPKIPm/eYKVWRFDFOyLHf51ErDHvnT4Sby7Tiu9ZaHxvu8rzW+MX+nVSfVUX6tODUvFzxYX3K9Z1PrrBrQ8iAVoTuASdDwtInECPamZsJYubtdUhdCDSd0MbcEYkM0exsV9SLGhrs9fy8ouHTklcOzQej91eUDgNOw6PvQMxfsOCUZD+OdPuLit1C+iujfcomBgs2Bx5wHm0TEs+M43cSKUUqR6+m/FTc+HprglFHtPL8rj5Zyi88ZqN2xOjKAZuBfO1m4P9iI5RW9HXJbWNpsV7Zvgil557/u4uM1MQUCfGejS7y1RCrnslH3djCS8OMVZJElXVuhp4/U49lfeGA9Lc3x4lDgzMV1j6q4OeG6ot6+TLt9EQmZNscjwBsL3i0MCO3MkuaB5Wci12KKN/op4sA5eL8nxuyF0ylY/nGO8qDRf82Ugi0Lf7HYNNBH3Z/wPFThjekfSQHLryDYtTqvM+7IGYOUL1+OI7WxEFI3Non3FkCboJ0GVBGG+X26SWYs8gYzJT4/Iom1WDCKuqTpgsyJYqNiBmSWeYiXDFsjbiiUBmG37XbfpthJdP5hNWmMhCtC/BJ4ViEU43e2OJC6pyHxhKuvV7teXouC/1mICzJE4gBQoFeXO867TD/4HcVAoLFb2+oxObTFokLrkOJ9TnGckmfLa2UKOdIqAenVE="

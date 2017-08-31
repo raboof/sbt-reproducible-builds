@@ -4,8 +4,6 @@ organization := "net.bzzt"
 
 scalaVersion := "2.10.6"
 
-version := "0.3-SNAPSHOT"
-
 crossSbtVersions := Vector("0.13.16", "1.0.1")
 
 enablePlugins(ReproducibleBuildsPlugin)

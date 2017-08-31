@@ -1,4 +1,5 @@
 language: scala
 jdk: oraclejdk8
 script:
-  - sbt ^test
+  - sbt ^test ^publishLocal
+  - md5sum target/scala-*/sbt-*/*.jar_

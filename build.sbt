@@ -2,9 +2,9 @@ sbtPlugin := true
 
 organization := "net.bzzt"
 
-scalaVersion := "2.10.6"
+scalaVersion := "2.12.4"
 
-crossSbtVersions := Vector("0.13.16", "1.0.1")
+crossSbtVersions := Vector("0.13.16", "1.0.4")
 
 enablePlugins(ReproducibleBuildsPlugin)
 

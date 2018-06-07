@@ -10,7 +10,7 @@ Usage
 
 Then add to your `project/plugins.sbt`:
 
-![](https://pi.bzzt.net/test.svg)
+![](https://pi.bzzt.net/test2.svg)
 
 And to `build.sbt`:
 

@@ -10,9 +10,7 @@ Usage
 
 Then add to your `project/plugins.sbt`:
 
-```
-addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.3")
-```
+![](https://pi.bzzt.net/test2.svg)
 
 And to `build.sbt`:
 

@@ -1,0 +1,3 @@
+> package
+$ exists target/scala-2.12/simple_2.12-0.1.0-SNAPSHOT.jar_
+$ must-mirror target/scala-2.12/simple_2.12-0.1.0-SNAPSHOT.jar_ expected/simple_2.12-0.1.0-SNAPSHOT.jar

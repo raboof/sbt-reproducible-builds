@@ -12,3 +12,8 @@ enablePlugins(ReproducibleBuildsPlugin)
 libraryDependencies += "net.bzzt" % "reproducible-build" % "0.2"
 
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
+
+scriptedLaunchOpts := { scriptedLaunchOpts.value ++
+  Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
+}
+scriptedBufferLog := false

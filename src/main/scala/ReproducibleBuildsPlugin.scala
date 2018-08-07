@@ -55,7 +55,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
         "Checksums-Sha256" -> s"\n $checksum ${bytes.length} ${packagedFile.getName}",
         // Extra 'custom' fields:
         "ScalaVersion" -> (scalaVersion in artifactName).value,
-        "ScalaBinaryVersion" -> (scalaBinaryVersion in artifactName).value,
+        "ScalaBinaryVersion" -> (scalaBinaryVersion in artifactName).value
       )
 
       import collection.JavaConverters._

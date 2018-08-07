@@ -20,7 +20,9 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
   override lazy val projectSettings = Seq(
     packageBin in Compile := {
       val bin = (packageBin in Compile).value
-      val out = new File(bin.getCanonicalPath + "_")
+      val dir = bin.getParentFile.toPath.resolve("stripped")
+      dir.toFile.mkdir()
+      val out = dir.resolve(bin.getName).toFile
       new ZipStripper()
         .addFileStripper("META-INF/MANIFEST.MF", new ManifestStripper())
         .addFileStripper("META-INF/maven/\\S*/pom.properties", new PomPropertiesStripper())

@@ -1,7 +1,7 @@
 language: scala
 jdk: oraclejdk8
 script:
-  - sbt ^test scripted ^publishLocal
+  - sbt "set logLevel := Level.Debug" ^test scripted ^publishLocal
   - md5sum target/scala-*/sbt-*/*.jar_
 
 deploy:

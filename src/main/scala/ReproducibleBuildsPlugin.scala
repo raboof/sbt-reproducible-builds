@@ -6,9 +6,13 @@ import java.security.MessageDigest
 
 import gigahorse.GigahorseSupport
 import sbt.Defaults._
-import sbt.{Artifact, AutoPlugin, Compile, File, Plugins, ScalaVersion, taskKey}
+import sbt.{Artifact, AutoPlugin, Compile, File, IO, Plugins, ScalaVersion, taskKey}
 import sbt.Keys.{scalaVersion, _}
 import sbt.plugins.JvmPlugin
+import com.typesafe.sbt.pgp
+import com.typesafe.sbt.pgp.{CommandLineGpgSigner, PgpSigner}
+import com.typesafe.sbt.pgp.PgpKeys._
+import com.typesafe.sbt.pgp.PgpSettings.{pgpPassphrase => _, pgpSecretRing => _, pgpSigningKey => _, useGpgAgent => _, _}
 import io.github.zlika.reproducible._
 import sbt.io.syntax.{URI, uri}
 import sbt.librarymanagement.Http.http
@@ -20,6 +24,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
   val reproducibleBuildsPackageName = taskKey[String]("Package name of this build, including version but excluding disambiguation string")
   val reproducibleBuildsCertification = taskKey[File]("Create a Reproducible Builds certification")
   val reproducibleBuildsUploadPrefix = taskKey[URI]("Base URL to send uploads to")
+  val signedReproducibleBuildsCertification = taskKey[File]("Create a signed Reproducible Builds certification")
   val reproducibleBuildsUploadCertification = taskKey[Unit]("Upload the Reproducible Builds certification")
 
   val disambiguation = taskKey[Iterable[File] => Option[String]]("Generator for optional discriminator string")
@@ -84,8 +89,13 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
 
       targetFilePath.toFile
     },
-    reproducibleBuildsUploadCertification := {
+    signedReproducibleBuildsCertification := {
       val file = reproducibleBuildsCertification.value
+      val signer = new CleartextCommandLineGpgSigner(gpgCommand.value, useGpgAgent.value, pgpSigningKey.value, pgpPassphrase.value)
+      signer.sign(file, new File(file.getAbsolutePath + pgp.gpgExtension), streams.value)
+    },
+    reproducibleBuildsUploadCertification := {
+      val file = signedReproducibleBuildsCertification.value
       val groupId = organization.value
       val uri = reproducibleBuildsUploadPrefix.value.resolve(groupId + "/" + reproducibleBuildsPackageName.value + "/").resolve(file.getName)
 
@@ -97,6 +107,28 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
           .withBody(new String(Files.readAllBytes(file.toPath), Charset.forName("UTF-8"))))
     }
   )
+
+  /**
+    *  A GpgSigner that uses the command-line to run gpg.
+    *
+    * Taken from sbt-pgp, but:
+    * * changed '--detach-sign' to '--clear-sign'
+    * * removed 'secRing' (see https://github.com/sbt/sbt-pgp/issues/126)
+    */
+  private class CleartextCommandLineGpgSigner(command: String, agent: Boolean, optKey: Option[Long], optPassphrase: Option[Array[Char]]) extends PgpSigner {
+    def sign(file: File, signatureFile: File, s: TaskStreams): File = {
+      if (signatureFile.exists) IO.delete(signatureFile)
+      val passargs: Seq[String] = (optPassphrase map { passArray => passArray mkString "" } map { pass => Seq("--passphrase", pass) }) getOrElse Seq.empty
+      val keyargs: Seq[String] = optKey map (k => Seq("--default-key", "0x%x" format (k))) getOrElse Seq.empty
+      val args = passargs ++ Seq("--clear-sign", "--armor") ++ (if (agent) Seq("--use-agent") else Seq.empty) ++ keyargs
+      sys.process.Process(command, args ++ Seq("--output", signatureFile.getAbsolutePath, file.getAbsolutePath)) ! s.log match {
+        case 0 => ()
+        case n => sys.error("Failure running gpg --clear-sign.  Exit code: " + n)
+      }
+      signatureFile
+    }
+    override val toString: String = "RB GPG-Command(" + command + ")"
+  }
 
   /**
     * https://www.debian.org/doc/debian-policy/ch-controlfields.html#syntax-of-control-files

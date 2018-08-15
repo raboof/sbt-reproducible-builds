@@ -17,7 +17,12 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
   val reproducibleBuildsCertification = taskKey[File]("Create a Reproducible Builds certification")
   val reproducibleBuildsUploadCertification = taskKey[Unit]("Upload the Reproducible Builds certification")
 
+  val disambiguation = taskKey[File => Option[String]]("Generator for optionas discriminator string")
+
   override lazy val projectSettings = Seq(
+    disambiguation in Compile := ((packagedFile: File) =>
+      Some(sys.env.get("USER").orElse(sys.env.get("USERNAME")).map(_ + "-").getOrElse("") + packagedFile.lastModified())
+    ),
     packageBin in Compile := {
       val bin = (packageBin in Compile).value
       val dir = bin.getParentFile.toPath.resolve("stripped")
@@ -33,11 +38,12 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     reproducibleBuildsCertification := {
       val groupId = organization.value
       val packagedFile = (packageBin in Compile).value
-      val packageName = moduleName.value
+      val packageName = moduleName.value + "_" + scalaBinaryVersion.value
 
       val targetDirPath = crossTarget.value
       val packageVersion = version.value
-      val targetFilePath = targetDirPath.toPath.resolve(targetFilename(packageName, packageVersion, "TODO"))
+      val architecture = "all"
+      val targetFilePath = targetDirPath.toPath.resolve(targetFilename(packageName, packageVersion, architecture, (disambiguation in Compile).value(packagedFile)))
 
       val bytes = Files.readAllBytes(packagedFile.toPath)
 
@@ -46,13 +52,13 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
 
       val content = Map(
         "Format" -> "1.8",
-        "Build-Architecture" -> "all",
+        "Build-Architecture" -> architecture,
         "Source" -> packageName,
         "Binary" -> packageName,
         "Package" -> packageName,
         // Strictly spoken not allowed by https://wiki.debian.org/ReproducibleBuilds/BuildinfoFiles#Field_descriptions,
         // but jars should typically be architecture-independent...
-        "Architecture" -> "all",
+        "Architecture" -> architecture,
         "Version" -> packageVersion,
         "Checksums-Sha256" -> s"\n $checksum ${bytes.length} ${packagedFile.getName}",
         // Extra 'custom' fields:
@@ -84,12 +90,8 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     * Determine the target filename.
     *
     * See https://wiki.debian.org/ReproducibleBuilds/BuildinfoFiles#File_name_and_encoding
-    *
-    * @param source
-    * @param version
-    * @param suffix
     * @return
     */
-  def targetFilename(source: String, version: String, suffix: String) =
-    source + "_" + version + "_" + suffix + ".buildinfo"
+  def targetFilename(source: String, version: String, architecture: String, suffix: Option[String]) =
+    source + "_" + version + "_" + architecture + suffix.map("_" + _).getOrElse("") + ".buildinfo"
 }

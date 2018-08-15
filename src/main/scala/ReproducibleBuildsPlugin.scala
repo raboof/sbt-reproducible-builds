@@ -121,7 +121,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       val passargs: Seq[String] = (optPassphrase map { passArray => passArray mkString "" } map { pass => Seq("--passphrase", pass) }) getOrElse Seq.empty
       val keyargs: Seq[String] = optKey map (k => Seq("--default-key", "0x%x" format (k))) getOrElse Seq.empty
       val args = passargs ++ Seq("--clear-sign", "--armor") ++ (if (agent) Seq("--use-agent") else Seq.empty) ++ keyargs
-      sys.process.Process(command, args ++ Seq("--output", signatureFile.getAbsolutePath, file.getAbsolutePath)) ! s.log match {
+      sys.process.Process(command, args ++ Seq("--output", signatureFile.getAbsolutePath, file.getAbsolutePath)) !< match {
         case 0 => ()
         case n => sys.error("Failure running gpg --clear-sign.  Exit code: " + n)
       }

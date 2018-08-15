@@ -17,11 +17,11 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
   val reproducibleBuildsCertification = taskKey[File]("Create a Reproducible Builds certification")
   val reproducibleBuildsUploadCertification = taskKey[Unit]("Upload the Reproducible Builds certification")
 
-  val disambiguation = taskKey[File => Option[String]]("Generator for optionas discriminator string")
+  val disambiguation = taskKey[Iterable[File] => Option[String]]("Generator for optional discriminator string")
 
   override lazy val projectSettings = Seq(
-    disambiguation in Compile := ((packagedFile: File) =>
-      Some(sys.env.get("USER").orElse(sys.env.get("USERNAME")).map(_ + "-").getOrElse("") + packagedFile.lastModified())
+    disambiguation in Compile := ((packagedFiles: Iterable[File]) =>
+      Some(sys.env.get("USER").orElse(sys.env.get("USERNAME")).map(_ + "-").getOrElse("") + packagedFiles.map(_.lastModified()).max)
     ),
     packageBin in Compile := {
       val bin = (packageBin in Compile).value
@@ -37,18 +37,25 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     artifactPath in reproducibleBuildsCertification := artifactPathSetting(artifact in reproducibleBuildsCertification).value,
     reproducibleBuildsCertification := {
       val groupId = organization.value
-      val packagedFile = (packageBin in Compile).value
       val packageName = moduleName.value + "_" + scalaBinaryVersion.value
 
       val targetDirPath = crossTarget.value
       val packageVersion = version.value
       val architecture = "all"
-      val targetFilePath = targetDirPath.toPath.resolve(targetFilename(packageName, packageVersion, architecture, (disambiguation in Compile).value(packagedFile)))
 
-      val bytes = Files.readAllBytes(packagedFile.toPath)
+      val artifacts = (packagedArtifacts in Compile).value
+        .filter { case (artifact, _) => artifact.`type` == "pom" || artifact.`type` == "jar" }
 
-      val digest = MessageDigest.getInstance("SHA-256")
-      val checksum = digest.digest(bytes).map("%02x" format _).mkString
+      val targetFilePath = targetDirPath.toPath.resolve(targetFilename(packageName, packageVersion, architecture, (disambiguation in Compile).value(artifacts.map(_._2))))
+
+      val checksums = artifacts
+        .map { case (_, packagedFile) =>
+          val bytes = Files.readAllBytes(packagedFile.toPath)
+          val digest = MessageDigest.getInstance("SHA-256")
+          val checksum = digest.digest(bytes).map("%02x" format _).mkString
+
+          s"$checksum ${bytes.length} ${packagedFile.getName}"
+        }.mkString("\n  ", "\n  ", "")
 
       val content = Map(
         "Format" -> "1.8",
@@ -60,7 +67,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
         // but jars should typically be architecture-independent...
         "Architecture" -> architecture,
         "Version" -> packageVersion,
-        "Checksums-Sha256" -> s"\n $checksum ${bytes.length} ${packagedFile.getName}",
+        "Checksums-Sha256" -> checksums,
         // Extra 'custom' fields:
         "ScalaVersion" -> (scalaVersion in artifactName).value,
         "ScalaBinaryVersion" -> (scalaBinaryVersion in artifactName).value

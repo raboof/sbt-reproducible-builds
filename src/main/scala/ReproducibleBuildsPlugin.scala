@@ -4,22 +4,28 @@ import java.nio.charset.Charset
 import java.nio.file.{Files, Paths}
 import java.security.MessageDigest
 
+import gigahorse.GigahorseSupport
 import sbt.Defaults._
 import sbt.{Artifact, AutoPlugin, Compile, File, Plugins, ScalaVersion, taskKey}
 import sbt.Keys.{scalaVersion, _}
 import sbt.plugins.JvmPlugin
 import io.github.zlika.reproducible._
+import sbt.io.syntax.{URI, uri}
+import sbt.librarymanagement.Http.http
 
 object ReproducibleBuildsPlugin extends AutoPlugin {
   // To make sure we're loaded after the defaults
   override def requires: Plugins = JvmPlugin
 
+  val reproducibleBuildsPackageName = taskKey[String]("Package name of this build, including version but excluding disambiguation string")
   val reproducibleBuildsCertification = taskKey[File]("Create a Reproducible Builds certification")
+  val reproducibleBuildsUploadPrefix = taskKey[URI]("Base URL to send uploads to")
   val reproducibleBuildsUploadCertification = taskKey[Unit]("Upload the Reproducible Builds certification")
 
   val disambiguation = taskKey[Iterable[File] => Option[String]]("Generator for optional discriminator string")
 
   override lazy val projectSettings = Seq(
+    reproducibleBuildsUploadPrefix := uri("http://localhost:8000/"),
     disambiguation in Compile := ((packagedFiles: Iterable[File]) =>
       Some(sys.env.get("USER").orElse(sys.env.get("USERNAME")).map(_ + "-").getOrElse("") + packagedFiles.map(_.lastModified()).max)
     ),
@@ -35,9 +41,9 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       out
     },
     artifactPath in reproducibleBuildsCertification := artifactPathSetting(artifact in reproducibleBuildsCertification).value,
+    reproducibleBuildsPackageName := moduleName.value + "_" + scalaBinaryVersion.value,
     reproducibleBuildsCertification := {
-      val groupId = organization.value
-      val packageName = moduleName.value + "_" + scalaBinaryVersion.value
+      val packageName = reproducibleBuildsPackageName.value
 
       val targetDirPath = crossTarget.value
       val packageVersion = version.value
@@ -79,7 +85,16 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       targetFilePath.toFile
     },
     reproducibleBuildsUploadCertification := {
-      println(reproducibleBuildsCertification.value)
+      val file = reproducibleBuildsCertification.value
+      val groupId = organization.value
+      val uri = reproducibleBuildsUploadPrefix.value.resolve(groupId + "/" + reproducibleBuildsPackageName.value + "/").resolve(file.getName)
+
+      import gigahorse.HttpWrite._
+      http.run(
+        GigahorseSupport.url(uri.toASCIIString)
+          .withMethod("PUT")
+          // TODO content-type
+          .withBody(new String(Files.readAllBytes(file.toPath), Charset.forName("UTF-8"))))
     }
   )
 

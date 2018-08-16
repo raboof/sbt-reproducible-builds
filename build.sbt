@@ -4,7 +4,11 @@ organization := "net.bzzt"
 
 scalaVersion := "2.12.4"
 
-crossSbtVersions := Vector("0.13.16", "1.0.4")
+/**
+ * Don't build for 0.13, since that does not include
+ * gigahorse to perform uploads.
+ */
+crossSbtVersions := Vector(/*"0.13.16",*/ "1.0.4")
 
 enablePlugins(ReproducibleBuildsPlugin)
 enablePlugins(SbtPlugin)

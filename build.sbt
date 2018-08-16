@@ -10,12 +10,15 @@ scalaVersion := "2.12.4"
  */
 crossSbtVersions := Vector(/*"0.13.16",*/ "1.0.4")
 
+val sbtPgpVersion = "1.1.1"
+
 enablePlugins(ReproducibleBuildsPlugin)
 enablePlugins(SbtPlugin)
 enablePlugins(ScriptedPlugin)
 
 // Based on https://github.com/raboof/reproducible-build-maven-plugin
 libraryDependencies += "net.bzzt" % "reproducible-build" % "0.2"
+libraryDependencies += "com.jsuereth" % "sbt-pgp" % sbtPgpVersion
 
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 
@@ -23,3 +26,6 @@ scriptedLaunchOpts := { scriptedLaunchOpts.value ++
   Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
 }
 scriptedBufferLog := false
+
+// Transitive plugin dependency:
+addSbtPlugin("com.jsuereth" % "sbt-pgp" % sbtPgpVersion)

@@ -6,16 +6,20 @@ import java.security.MessageDigest
 
 import gigahorse.GigahorseSupport
 import sbt.Defaults._
-import sbt.{Artifact, AutoPlugin, Compile, File, IO, Plugins, ScalaVersion, taskKey}
+import sbt.{AutoPlugin, Compile, File, IO, Plugins, taskKey}
 import sbt.Keys.{scalaVersion, _}
 import sbt.plugins.JvmPlugin
 import com.typesafe.sbt.pgp
-import com.typesafe.sbt.pgp.{CommandLineGpgSigner, PgpSigner}
+import com.typesafe.sbt.pgp.PgpSigner
 import com.typesafe.sbt.pgp.PgpKeys._
 import com.typesafe.sbt.pgp.PgpSettings.{pgpPassphrase => _, pgpSecretRing => _, pgpSigningKey => _, useGpgAgent => _, _}
 import io.github.zlika.reproducible._
 import sbt.io.syntax.{URI, uri}
 import sbt.librarymanagement.Http.http
+
+import scala.util.Success
+import spray.json._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object ReproducibleBuildsPlugin extends AutoPlugin {
   // To make sure we're loaded after the defaults
@@ -26,6 +30,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
   val reproducibleBuildsUploadPrefix = taskKey[URI]("Base URL to send uploads to")
   val signedReproducibleBuildsCertification = taskKey[File]("Create a signed Reproducible Builds certification")
   val reproducibleBuildsUploadCertification = taskKey[Unit]("Upload the Reproducible Builds certification")
+  val reproducibleBuildsCheckCertification = taskKey[Unit]("Download and compare Reproducible Builds certifications")
 
   val disambiguation = taskKey[Iterable[File] => Option[String]]("Generator for optional discriminator string")
 
@@ -105,8 +110,55 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
           .withMethod("PUT")
           // TODO content-type
           .withBody(new String(Files.readAllBytes(file.toPath), Charset.forName("UTF-8"))))
+    },
+    reproducibleBuildsCheckCertification := {
+      val ours = reproducibleBuildsCertification.value
+      val groupId = organization.value
+      val uploadPrefix = reproducibleBuildsUploadPrefix.value
+      val uri = uploadPrefix.resolve(groupId + "/" + reproducibleBuildsPackageName.value + "/")
+      http.run(GigahorseSupport.url(uri.toASCIIString)).onComplete {
+        case Success(v) =>
+          v.bodyAsString
+            .parseJson
+            .asInstanceOf[JsArray]
+            .elements
+            .map(_.asInstanceOf[JsObject])
+            .filter(_.fields("type").asInstanceOf[JsString].value == "file")
+            .map(_.fields("name").asInstanceOf[JsString].value)
+            .foreach(name => {
+              checkVerification(ours, uploadPrefix.resolve(name))
+            })
+      }
     }
   )
+
+  private def checkVerification(ours: File, uri: URI): Unit = {
+      import scala.collection.JavaConverters._
+      val ourSums = parseChecksums(Files.readAllLines(ours.toPath, Charset.forName("UTF-8")).asScala.toList)
+
+      println("Checking remote builds:")
+
+      http.run(GigahorseSupport.url(uri.toASCIIString)).onComplete {
+        case Success(v) =>
+          println(s"Comparing against $uri (warning: signature not checked):")
+          val remoteSums = parseChecksums(v.bodyAsString.split("\n").toList)
+          ourSums.foreach { ourSum =>
+            if (remoteSums.contains(ourSum)) {
+              println(s"Match: $ourSum")
+            } else {
+              println(s"Mismatch: our $ourSum not found in $remoteSums")
+            }
+          }
+      }
+    }
+
+  private def parseChecksums(lines: List[String]) = {
+    lines
+      .dropWhile(!_.startsWith("Checksums-Sha256"))
+      .drop(1)
+      .takeWhile(_.startsWith("  "))
+      .map(_.drop(2))
+  }
 
   /**
     *  A GpgSigner that uses the command-line to run gpg.

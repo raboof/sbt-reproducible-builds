@@ -2,6 +2,7 @@ sudo: false
 language: scala
 jdk: oraclejdk8
 script:
+  - sbt signedReproducibleBuildsCertification
   - sbt ^test scripted ^publishLocal
   - md5sum target/scala-*/sbt-*/stripped/sbt-reproducible-builds-*.jar
 

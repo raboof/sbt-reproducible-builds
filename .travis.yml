@@ -2,6 +2,8 @@ sudo: false
 language: scala
 jdk: oraclejdk8
 script:
+  - openssl aes-256-cbc -K $encrypted_2b1ceb155314_key -iv $encrypted_2b1ceb155314_iv -in private.key.enc -out .travis/private.key -d
+  - gpg --allow-secret-key-import --import .travis/private.key .travis/public.key
   - sbt signedReproducibleBuildsCertification
 
 deploy:

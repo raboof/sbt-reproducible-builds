@@ -176,7 +176,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       val args = passargs ++ Seq("--clearsign", "--armor") ++ (if (agent) Seq("--use-agent") else Seq.empty) ++ keyargs
       sys.process.Process(command, args ++ Seq("--output", signatureFile.getAbsolutePath, file.getAbsolutePath)) !< match {
         case 0 => ()
-        case n => sys.error("Failure running gpg --clear-sign.  Exit code: " + n)
+        case n => sys.error("Failure running gpg --clearsign.  Exit code: " + n)
       }
       signatureFile
     }

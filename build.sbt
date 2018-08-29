@@ -23,7 +23,7 @@ libraryDependencies += "io.spray" %%  "spray-json" % "1.3.4"
 
 // Dogfood^WChampagne time!
 import net.bzzt.reproduciblebuilds.ReproducibleBuildsPlugin._
-reproducibleBuildsUploadPrefix := uri("http://pi.bzzt.net:8081")
+reproducibleBuildsUploadPrefix := uri("http://pi.bzzt.net:8081/")
 
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 

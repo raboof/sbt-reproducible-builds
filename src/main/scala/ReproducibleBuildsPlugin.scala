@@ -164,7 +164,8 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     *  A GpgSigner that uses the command-line to run gpg.
     *
     * Taken from sbt-pgp, but:
-    * * changed '--detach-sign' to '--clear-sign'
+    * * changed '--detach-sign' to '--clearsign'
+    *   (needs to be '--clearsign' rather than '--clear-sign' to support gnupg 1.4.x)
     * * removed 'secRing' (see https://github.com/sbt/sbt-pgp/issues/126)
     */
   private class CleartextCommandLineGpgSigner(command: String, agent: Boolean, optKey: Option[Long], optPassphrase: Option[Array[Char]]) extends PgpSigner {
@@ -172,10 +173,10 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       if (signatureFile.exists) IO.delete(signatureFile)
       val passargs: Seq[String] = (optPassphrase map { passArray => passArray mkString "" } map { pass => Seq("--passphrase", pass) }) getOrElse Seq.empty
       val keyargs: Seq[String] = optKey map (k => Seq("--default-key", "0x%x" format (k))) getOrElse Seq.empty
-      val args = passargs ++ Seq("--clear-sign", "--armor") ++ (if (agent) Seq("--use-agent") else Seq.empty) ++ keyargs
+      val args = passargs ++ Seq("--clearsign", "--armor") ++ (if (agent) Seq("--use-agent") else Seq.empty) ++ keyargs
       sys.process.Process(command, args ++ Seq("--output", signatureFile.getAbsolutePath, file.getAbsolutePath)) !< match {
         case 0 => ()
-        case n => sys.error("Failure running gpg --clear-sign.  Exit code: " + n)
+        case n => sys.error("Failure running gpg --clearsign.  Exit code: " + n)
       }
       signatureFile
     }

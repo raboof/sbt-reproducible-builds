@@ -21,6 +21,10 @@ libraryDependencies += "net.bzzt" % "reproducible-build" % "0.2"
 libraryDependencies += "com.jsuereth" % "sbt-pgp" % sbtPgpVersion
 libraryDependencies += "io.spray" %%  "spray-json" % "1.3.4"
 
+// Dogfood^WChampagne time!
+import net.bzzt.reproduciblebuilds.ReproducibleBuildsPlugin._
+reproducibleBuildsUploadPrefix := uri("http://pi.bzzt.net:8081")
+
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 
 scriptedLaunchOpts := { scriptedLaunchOpts.value ++

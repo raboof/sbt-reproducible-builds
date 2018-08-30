@@ -8,7 +8,7 @@ scalaVersion := "2.12.4"
  * Don't build for 0.13, since that does not include
  * gigahorse to perform uploads.
  */
-crossSbtVersions := Vector(/*"0.13.16",*/ "1.0.4")
+crossSbtVersions := Vector(/*"0.13.16",*/ "1.2.1")
 
 val sbtPgpVersion = "1.1.1"
 

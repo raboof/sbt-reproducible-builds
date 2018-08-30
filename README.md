@@ -1,18 +1,24 @@
 # sbt-reproducible-builds
 
-Experimental plugin to make sbt builds more reproducible.
+[sbt](https://www.scala-sbt.org) plugin to make sbt builds more reproducible.
 
 See also: https://reproducible-builds.org/
 
-Overrides the `packageBin` task to post-process the result and
-apply the strippers from https://github.com/Zlika/reproducible-build-maven-plugin/
+This plugin includes a couple of features:
+
+ * Strip 'accidental' sources of nondeterminism (e.g. timestamps) from the packaged jar
+ * Produce a (signed) ['buildinfo'](https://reproducible-builds.org/docs/recording/) file describing the build environment used and containing a cryptographic hash of the resulting artifacts.
+ * Uploading this certification to a [reproducible-builds-certification-repository](http://github.com/raboof/reproducible-builds-certification-repository) instance
+ * Checking your local build against already-uploaded certifications
 
 ## Usage
+
+### Stripping nondeterminism from artifacts
 
 Then add to your `project/plugins.sbt`:
 
 ```
-addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.3")
+addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.15")
 ```
 
 And to `build.sbt`:
@@ -21,12 +27,18 @@ And to `build.sbt`:
 enablePlugins(ReproducibleBuildsPlugin)
 ```
 
-You can now generate a signed description of the build environment with the
-sbt task `signedReproducibleBuildsCertification`, upload it with
-`reproducibleBuildsUploadCertification` and check it with other uploaded
-certifications with `reproducibleBuildsCheckCertification`
+### Describe your build as a 'buildinfo' certification
 
-### Uploading certifications from Travis
+You can now generate a signed description of the build environment with the
+sbt task `signedReproducibleBuildsCertification`.
+
+### Sharing certifications
+
+Upload your certification to a
+[reproducible-builds-certification-repository](http://github.com/raboof/reproducible-builds-certification-repository) instance
+with `reproducibleBuildsUploadCertification`.
+
+#### Uploading certifications from Travis
 
 Especially if you're already deploying from Travis, it can be a great start to
 publish certifications from Travis as well. For this, you should give Travis
@@ -42,6 +54,12 @@ unencrypt. Finally, `gpg --import private.key public.key` and
 `sbt reproducibleBuildsUploadCertification` to sign and upload the
 certification from Travis.
 
+
+
+### Checking certifications
+
+Check your certification with other uploaded
+certifications with `reproducibleBuildsCheckCertification`
 
 ## Drinking our own champagne
 

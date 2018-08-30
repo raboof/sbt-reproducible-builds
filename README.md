@@ -2,14 +2,14 @@
 
 [sbt](https://www.scala-sbt.org) plugin to make sbt builds more reproducible.
 
-See also: https://reproducible-builds.org/
+For general information on 'Reproducible Builds', see https://reproducible-builds.org/
 
-This plugin includes a couple of features:
+This plugin provides a number of features:
 
  * Strip 'accidental' sources of nondeterminism (e.g. timestamps) from the packaged jar
  * Produce a (signed) ['buildinfo'](https://reproducible-builds.org/docs/recording/) file describing the build environment used and containing a cryptographic hash of the resulting artifacts.
- * Uploading this certification to a [reproducible-builds-certification-repository](http://github.com/raboof/reproducible-builds-certification-repository) instance
- * Checking your local build against already-uploaded certifications
+ * Upload this certification to a [reproducible-builds-certification-repository](http://github.com/raboof/reproducible-builds-certification-repository) instance
+ * Check your local build against already-uploaded certifications
 
 ## Usage
 
@@ -54,8 +54,6 @@ unencrypt. Finally, `gpg --import private.key public.key` and
 `sbt reproducibleBuildsUploadCertification` to sign and upload the
 certification from Travis.
 
-
-
 ### Checking certifications
 
 Check your certification with other uploaded
@@ -68,5 +66,5 @@ reproducible in the sense that building the same git tag should produce the
 exact same binary.
 
 When this is not the case, this is to be considered a bug and a bug report with
-the binary and information about any peculiarities of the build system would be
+the binary, the buildinfo and any additional information about any peculiarities of the build system would be
 greatly appreciated!

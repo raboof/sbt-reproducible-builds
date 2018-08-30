@@ -85,6 +85,8 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
         "Version" -> packageVersion,
         "Checksums-Sha256" -> checksums,
         // Extra 'custom' fields:
+        "JavaVersion" -> System.getProperty("java.version"),
+        "SbtVersion" -> sbtVersion.value,
         "ScalaVersion" -> (scalaVersion in artifactName).value,
         "ScalaBinaryVersion" -> (scalaBinaryVersion in artifactName).value
       )

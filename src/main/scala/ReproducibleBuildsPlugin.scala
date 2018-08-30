@@ -102,7 +102,9 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     reproducibleBuildsUploadCertification := {
       val file = signedReproducibleBuildsCertification.value
       val groupId = organization.value
-      val uri = reproducibleBuildsUploadPrefix.value.resolve(groupId + "/" + reproducibleBuildsPackageName.value + "/").resolve(file.getName)
+      val uploadPrefix = reproducibleBuildsUploadPrefix.value
+      val uri = uploadPrefix.resolve(groupId + "/" + reproducibleBuildsPackageName.value + "/" + version.value + "/")
+        .resolve(file.getName)
 
       import gigahorse.HttpWrite._
       http.run(
@@ -115,7 +117,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       val ours = reproducibleBuildsCertification.value
       val groupId = organization.value
       val uploadPrefix = reproducibleBuildsUploadPrefix.value
-      val uri = uploadPrefix.resolve(groupId + "/" + reproducibleBuildsPackageName.value + "/")
+      val uri = uploadPrefix.resolve(groupId + "/" + reproducibleBuildsPackageName.value + "/" + version.value + "/")
       http.run(GigahorseSupport.url(uri.toASCIIString)).onComplete {
         case Success(v) =>
           v.bodyAsString

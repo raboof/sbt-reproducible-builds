@@ -27,7 +27,7 @@ And to `build.sbt`:
 enablePlugins(ReproducibleBuildsPlugin)
 ```
 
-The built artifact can be found under `target/scala-${scala.bin.version}/stripped/${blendedLauncher/reproducibleBuildsPackageName}-${version}.jar`.
+The built artifact can be found under `target/scala-${scalaBinaryVersion}/stripped/${reproducibleBuildsPackageName}-${version}.jar`.
 
 ### Interoperability with other sbt plugins
 

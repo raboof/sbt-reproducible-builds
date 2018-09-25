@@ -27,6 +27,14 @@ And to `build.sbt`:
 enablePlugins(ReproducibleBuildsPlugin)
 ```
 
+The built artifact can be found under `target/scala-${scalaBinaryVersion}/stripped/${reproducibleBuildsPackageName}-${version}.jar`.
+
+### Interoperability with other sbt plugins
+
+#### sbt-osgi
+
+As this plugin as well as the sbt-osgi plugin redefine the `packageBin` task, it is necessary to re-apply the plugin settings after the application of the osgi settings. You can find an example under [` src/sbt-test/sbt-reproducible-builds/osgi/build.sbt`](src/sbt-test/sbt-reproducible-builds/osgi/build.sbt).
+
 ### Describe your build as a 'buildinfo' certification
 
 You can now generate a signed description of the build environment with the

@@ -22,16 +22,17 @@ import sbt.Keys._
 object SbtNativePackagerHelpers {
   val plugin: Plugins.Basic = UniversalPlugin
 
-  val none: File = new File("none")
-
   val settings: Seq[Setting[_]] = Seq(
-    // Make sure there's always a value defined, even when the Universal plugin isn't loaded:
-    packageBin in Global := none,
     packageBin in Universal := {
-      val upstream = (packageBin in Universal).value
-      // If the value is still `none`, the Universal plugin isn't loaded.
-      if (upstream == none) none
-      else ReproducibleBuildsPlugin.postProcessZip(upstream)
+      (packageBin in Universal).?.value match {
+        case Some(zip) =>
+          ReproducibleBuildsPlugin.postProcessZip(zip)
+        case None =>
+          throw new IllegalStateException(
+            "Reference to undefined setting: packageBin in Universal. " +
+            "Have you enabled a sbt-native-packager plugin?"
+          )
+      }
     }
   )
 }

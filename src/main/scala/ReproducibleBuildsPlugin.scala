@@ -17,12 +17,16 @@ import io.github.zlika.reproducible._
 import sbt.io.syntax.{URI, uri}
 import sbt.librarymanagement.Http.http
 
-import scala.util.Success
+import scala.util.{Success, Try}
 import spray.json._
+
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object ReproducibleBuildsPlugin extends AutoPlugin {
   // To make sure we're loaded after the defaults
+  val universalPluginOnClasspath =
+    Try(getClass.getClassLoader.loadClass("com.typesafe.sbt.packager.universal.UniversalPlugin")).isSuccess
+
   override def requires: Plugins = JvmPlugin
 
   val reproducibleBuildsPackageName = taskKey[String]("Package name of this build, including version but excluding disambiguation string")
@@ -124,16 +128,23 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
             })
       }
     }
+  ) ++ (
+    if (universalPluginOnClasspath) SbtNativePackagerHelpers.settings
+    else Seq.empty
   )
 
-  def postProcessJar(jar: File): File = {
-    val dir = jar.getParentFile.toPath.resolve("stripped")
-    dir.toFile.mkdir()
-    val out = dir.resolve(jar.getName).toFile
-    new ZipStripper()
+  def postProcessJar(jar: File): File = postProcessWith(jar, new ZipStripper()
       .addFileStripper("META-INF/MANIFEST.MF", new ManifestStripper())
-      .addFileStripper("META-INF/maven/\\S*/pom.properties", new PomPropertiesStripper())
-      .strip(jar, out)
+      .addFileStripper("META-INF/maven/\\S*/pom.properties", new PomPropertiesStripper()))
+
+  def postProcessZip(zip: File): File = postProcessWith(zip, new ZipStripper())
+
+  // TODO make the signature `Stripper`
+  private def postProcessWith(file: File, stripper: ZipStripper): File = {
+    val dir = file.getParentFile.toPath.resolve("stripped")
+    dir.toFile.mkdir()
+    val out = dir.resolve(file.getName).toFile
+    stripper.strip(file, out)
     out
   }
 

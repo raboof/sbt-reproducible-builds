@@ -19,6 +19,9 @@ libraryDependencies += "net.bzzt" % "reproducible-build" % "0.2"
 libraryDependencies += "com.jsuereth" % "sbt-pgp" % sbtPgpVersion
 libraryDependencies += "io.spray" %%  "spray-json" % "1.3.4"
 
+// Optional integration:
+addSbtPlugin("com.typesafe.sbt" %% "sbt-native-packager" % "1.3.9" % Provided)
+
 // Dogfood^WChampagne time!
 import net.bzzt.reproduciblebuilds.ReproducibleBuildsPlugin._
 reproducibleBuildsUploadPrefix := uri("http://pi.bzzt.net:8081/")

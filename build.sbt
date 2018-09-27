@@ -6,7 +6,7 @@ organization := "net.bzzt"
  * Don't build for 0.13, since that does not include
  * gigahorse to perform uploads.
  */
-crossSbtVersions := Vector(/*"0.13.16",*/ "1.2.1")
+crossSbtVersions := Vector(/*"0.13.16",*/ "1.2.3")
 
 val sbtPgpVersion = "1.1.1"
 

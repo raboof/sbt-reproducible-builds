@@ -1,5 +1,7 @@
 import net.bzzt.reproduciblebuilds.ReproducibleBuildsPlugin.disambiguation
 
+scalaVersion := "2.12.7"
+
 enablePlugins(ReproducibleBuildsPlugin)
 enablePlugins(JavaAppPackaging)
 

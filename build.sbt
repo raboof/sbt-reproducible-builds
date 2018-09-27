@@ -2,6 +2,8 @@ sbtPlugin := true
 
 organization := "net.bzzt"
 
+scalaVersion := "2.12.7"
+
 /**
  * Don't build for 0.13, since that does not include
  * gigahorse to perform uploads.

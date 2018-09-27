@@ -39,17 +39,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     disambiguation in Compile := ((packagedFiles: Iterable[File]) =>
       Some(sys.env.get("USER").orElse(sys.env.get("USERNAME")).map(_ + "-").getOrElse("") + packagedFiles.map(_.lastModified()).max)
     ),
-    packageBin in Compile := {
-      val bin = (packageBin in Compile).value
-      val dir = bin.getParentFile.toPath.resolve("stripped")
-      dir.toFile.mkdir()
-      val out = dir.resolve(bin.getName).toFile
-      new ZipStripper()
-        .addFileStripper("META-INF/MANIFEST.MF", new ManifestStripper())
-        .addFileStripper("META-INF/maven/\\S*/pom.properties", new PomPropertiesStripper())
-        .strip(bin, out)
-      out
-    },
+    packageBin in Compile := postProcessJar((packageBin in Compile).value),
     artifactPath in reproducibleBuildsCertification := artifactPathSetting(artifact in reproducibleBuildsCertification).value,
     reproducibleBuildsPackageName := moduleName.value + "_" + scalaBinaryVersion.value,
     reproducibleBuildsCertification := {
@@ -135,6 +125,17 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       }
     }
   )
+
+  def postProcessJar(jar: File): File = {
+    val dir = jar.getParentFile.toPath.resolve("stripped")
+    dir.toFile.mkdir()
+    val out = dir.resolve(jar.getName).toFile
+    new ZipStripper()
+      .addFileStripper("META-INF/MANIFEST.MF", new ManifestStripper())
+      .addFileStripper("META-INF/maven/\\S*/pom.properties", new PomPropertiesStripper())
+      .strip(jar, out)
+    out
+  }
 
   private def checkVerification(ours: File, uri: URI): Unit = {
       import scala.collection.JavaConverters._

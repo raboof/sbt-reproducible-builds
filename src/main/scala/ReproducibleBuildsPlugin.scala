@@ -139,8 +139,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
 
   def postProcessZip(zip: File): File = postProcessWith(zip, new ZipStripper())
 
-  // TODO make the signature `Stripper`
-  private def postProcessWith(file: File, stripper: ZipStripper): File = {
+  private def postProcessWith(file: File, stripper: Stripper): File = {
     val dir = file.getParentFile.toPath.resolve("stripped")
     dir.toFile.mkdir()
     val out = dir.resolve(file.getName).toFile

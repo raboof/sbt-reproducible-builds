@@ -17,7 +17,7 @@ enablePlugins(SbtPlugin)
 enablePlugins(ScriptedPlugin)
 
 // Based on https://github.com/raboof/reproducible-build-maven-plugin
-libraryDependencies += "net.bzzt" % "reproducible-build" % "0.2"
+libraryDependencies += "net.bzzt" % "reproducible-build" % "0.3"
 libraryDependencies += "com.jsuereth" % "sbt-pgp" % sbtPgpVersion
 libraryDependencies += "io.spray" %%  "spray-json" % "1.3.4"
 

@@ -10,7 +10,7 @@ scalaVersion := "2.12.7"
  */
 crossSbtVersions := Vector(/*"0.13.16",*/ "1.2.3")
 
-val sbtPgpVersion = "1.1.1"
+val sbtPgpVersion = "1.1.2"
 
 enablePlugins(ReproducibleBuildsPlugin)
 enablePlugins(SbtPlugin)

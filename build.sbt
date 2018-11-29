@@ -22,7 +22,7 @@ libraryDependencies += "com.jsuereth" % "sbt-pgp" % sbtPgpVersion
 libraryDependencies += "io.spray" %%  "spray-json" % "1.3.5"
 
 // Optional integration:
-addSbtPlugin("com.typesafe.sbt" %% "sbt-native-packager" % "1.3.14" % Provided)
+addSbtPlugin("com.typesafe.sbt" %% "sbt-native-packager" % "1.3.15" % Provided)
 
 // Dogfood^WChampagne time!
 import net.bzzt.reproduciblebuilds.ReproducibleBuildsPlugin._

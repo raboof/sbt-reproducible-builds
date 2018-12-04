@@ -2,13 +2,13 @@ sbtPlugin := true
 
 organization := "net.bzzt"
 
-scalaVersion := "2.12.7"
+scalaVersion := "2.12.8"
 
 /**
  * Don't build for 0.13, since that does not include
  * gigahorse to perform uploads.
  */
-crossSbtVersions := Vector(/*"0.13.16",*/ "1.2.4")
+crossSbtVersions := Vector(/*"0.13.16",*/ "1.2.7")
 
 val sbtPgpVersion = "1.1.2"
 
@@ -16,8 +16,7 @@ enablePlugins(ReproducibleBuildsPlugin)
 enablePlugins(SbtPlugin)
 enablePlugins(ScriptedPlugin)
 
-// Based on https://github.com/raboof/reproducible-build-maven-plugin
-libraryDependencies += "net.bzzt" % "reproducible-build" % "0.3"
+libraryDependencies += "net.bzzt" % "reproducible-builds-jvm-stripper" % "0.9"
 libraryDependencies += "com.jsuereth" % "sbt-pgp" % sbtPgpVersion
 libraryDependencies += "io.spray" %%  "spray-json" % "1.3.5"
 

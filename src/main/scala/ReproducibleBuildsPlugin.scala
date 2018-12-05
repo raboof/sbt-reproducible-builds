@@ -1,8 +1,7 @@
 package net.bzzt.reproduciblebuilds
 
 import java.nio.charset.Charset
-import java.nio.file.{Files, Paths}
-import java.security.MessageDigest
+import java.nio.file.Files
 
 import gigahorse.GigahorseSupport
 import sbt.Defaults._
@@ -55,38 +54,27 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
 
       val artifacts = (packagedArtifacts in Compile).value
         .filter { case (artifact, _) => artifact.`type` == "pom" || artifact.`type` == "jar" }
+      val classifier = (packagedArtifacts in Compile).value.flatMap { case (artifact, _) => artifact.classifier }.headOption
 
       val targetFilePath = targetDirPath.toPath.resolve(targetFilename(packageName, packageVersion, architecture, (disambiguation in Compile).value(artifacts.map(_._2))))
 
-      val checksums = artifacts
-        .map { case (_, packagedFile) =>
-          val bytes = Files.readAllBytes(packagedFile.toPath)
-          val digest = MessageDigest.getInstance("SHA-256")
-          val checksum = digest.digest(bytes).map("%02x" format _).mkString
+      val checksums: List[Checksum] = artifacts
+        .map { case (_, packagedFile) => Checksum(packagedFile) }
+        .toList
 
-          s"$checksum ${bytes.length} ${packagedFile.getName}"
-        }.mkString("\n  ", "\n  ", "")
-
-      val content = Map(
-        "Format" -> "1.8",
-        "Build-Architecture" -> architecture,
-        "Source" -> packageName,
-        "Binary" -> packageName,
-        "Package" -> packageName,
-        // Strictly spoken not allowed by https://wiki.debian.org/ReproducibleBuilds/BuildinfoFiles#Field_descriptions,
-        // but jars should typically be architecture-independent...
-        "Architecture" -> architecture,
-        "Version" -> packageVersion,
-        "Checksums-Sha256" -> checksums,
-        // Extra 'custom' fields:
-        "JavaVersion" -> System.getProperty("java.version"),
-        "SbtVersion" -> sbtVersion.value,
-        "ScalaVersion" -> (scalaVersion in artifactName).value,
-        "ScalaBinaryVersion" -> (scalaBinaryVersion in artifactName).value
+      val certification = Certification(
+        organization.value,
+        packageName,
+        packageVersion,
+        classifier,
+        architecture,
+        (scalaVersion in artifactName).value,
+        (scalaBinaryVersion in artifactName).value,
+        sbtVersion.value,
+        checksums,
       )
 
-      import collection.JavaConverters._
-      Files.write(targetFilePath, formatControlFile(content).asJava, Charset.forName("UTF-8"))
+      Files.write(targetFilePath, certification.asPropertyString.getBytes(Charset.forName("UTF-8")))
 
       targetFilePath.toFile
     },
@@ -197,16 +185,6 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     }
     override val toString: String = "RB GPG-Command(" + command + ")"
   }
-
-  /**
-    * https://www.debian.org/doc/debian-policy/ch-controlfields.html#syntax-of-control-files
-    *
-    * @param content key->value pairs
-    * @return formatted lines
-    */
-  private def formatControlFile(content: Map[String, String]): Iterable[String] =
-    // Dummy implementation ;)
-    content.map { case (key, value) => s"$key: $value" }
 
   /**
     * Determine the target filename.

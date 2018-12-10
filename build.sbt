@@ -20,6 +20,8 @@ libraryDependencies += "net.bzzt" % "reproducible-builds-jvm-stripper" % "0.9"
 libraryDependencies += "com.jsuereth" % "sbt-pgp" % sbtPgpVersion
 libraryDependencies += "io.spray" %%  "spray-json" % "1.3.5"
 
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5" % "test"
+
 // Optional integration:
 addSbtPlugin("com.typesafe.sbt" %% "sbt-native-packager" % "1.3.15" % Provided)
 

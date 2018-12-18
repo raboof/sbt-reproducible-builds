@@ -14,6 +14,7 @@ import com.typesafe.sbt.pgp.PgpKeys._
 import com.typesafe.sbt.pgp.PgpSettings.{pgpPassphrase => _, pgpSecretRing => _, pgpSigningKey => _, useGpgAgent => _, _}
 import io.github.zlika.reproducible._
 import sbt.io.syntax.{URI, uri}
+import sbt.librarymanagement.{Artifact, Configuration}
 import sbt.librarymanagement.Http.http
 
 import scala.util.{Success, Try}
@@ -30,53 +31,65 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
 
   val reproducibleBuildsPackageName = taskKey[String]("Package name of this build, including version but excluding disambiguation string")
   val reproducibleBuildsCertification = taskKey[File]("Create a Reproducible Builds certification")
+  val publishCertification = taskKey[Boolean]("Include the certification when publishing")
   val reproducibleBuildsUploadPrefix = taskKey[URI]("Base URL to send uploads to")
   val signedReproducibleBuildsCertification = taskKey[File]("Create a signed Reproducible Builds certification")
   val reproducibleBuildsUploadCertification = taskKey[Unit]("Upload the Reproducible Builds certification")
   val reproducibleBuildsCheckCertification = taskKey[Unit]("Download and compare Reproducible Builds certifications")
 
-  val disambiguation = taskKey[Iterable[File] => Option[String]]("Generator for optional discriminator string")
+  val disambiguation = taskKey[Certification => Option[String]]("Generator for optional discriminator string")
 
   override lazy val projectSettings = Seq(
+    publishCertification := true,
     reproducibleBuildsUploadPrefix := uri("http://localhost:8000/"),
-    disambiguation in Compile := ((packagedFiles: Iterable[File]) =>
-      Some(sys.env.get("USER").orElse(sys.env.get("USERNAME")).map(_ + "-").getOrElse("") + packagedFiles.map(_.lastModified()).max)
+    disambiguation in Compile := ((c: Certification) =>
+      Some(sys.env.get("USER").orElse(sys.env.get("USERNAME")).map(_ + "-").getOrElse("") + c.date)
     ),
     packageBin in Compile := postProcessJar((packageBin in Compile).value),
     artifactPath in reproducibleBuildsCertification := artifactPathSetting(artifact in reproducibleBuildsCertification).value,
-    reproducibleBuildsPackageName := moduleName.value + "_" + scalaBinaryVersion.value,
+    reproducibleBuildsPackageName := moduleName.value,
     reproducibleBuildsCertification := {
-      val packageName = reproducibleBuildsPackageName.value
-
-      val targetDirPath = crossTarget.value
-      val packageVersion = version.value
-      val architecture = "all"
-
-      val artifacts = (packagedArtifacts in Compile).value
-        .filter { case (artifact, _) => artifact.`type` == "pom" || artifact.`type` == "jar" }
-      val classifier = (packagedArtifacts in Compile).value.flatMap { case (artifact, _) => artifact.classifier }.headOption
-
-      val targetFilePath = targetDirPath.toPath.resolve(targetFilename(packageName, packageVersion, architecture, (disambiguation in Compile).value(artifacts.map(_._2))))
-
-      val checksums: List[Checksum] = artifacts
-        .map { case (_, packagedFile) => Checksum(packagedFile) }
-        .toList
-
       val certification = Certification(
         organization.value,
-        packageName,
-        packageVersion,
-        classifier,
-        architecture,
+        reproducibleBuildsPackageName.value,
+        version.value,
+        (packagedArtifacts in Compile).value,
         (scalaVersion in artifactName).value,
         (scalaBinaryVersion in artifactName).value,
-        sbtVersion.value,
-        checksums,
+        sbtVersion.value
       )
+
+      val targetDirPath = crossTarget.value
+      val targetFilePath = targetDirPath.toPath.resolve(targetFilename(certification.artifactId, certification.version, certification.classifier, (disambiguation in Compile).value(certification)))
 
       Files.write(targetFilePath, certification.asPropertyString.getBytes(Charset.forName("UTF-8")))
 
       targetFilePath.toFile
+    },
+    packagedArtifacts ++= {
+      val artifact = Map(
+        Artifact(reproducibleBuildsPackageName.value, "buildinfo", "buildinfo") ->
+        {
+          val certification = Certification(
+            organization.value,
+            reproducibleBuildsPackageName.value,
+            version.value,
+            (packagedArtifacts in Compile).value,
+            (scalaVersion in artifactName).value,
+            (scalaBinaryVersion in artifactName).value,
+            sbtVersion.value
+          )
+
+          val targetDirPath = crossTarget.value
+          val targetFilePath = targetDirPath.toPath.resolve(targetFilename(certification.artifactId, certification.version, certification.classifier, (disambiguation in Compile).value(certification)))
+
+          Files.write(targetFilePath, certification.asPropertyString.getBytes(Charset.forName("UTF-8")))
+
+          targetFilePath.toFile
+        }
+      )
+
+      if (publishCertification.value) artifact else Map.empty[Artifact, File]
     },
     signedReproducibleBuildsCertification := {
       val file = reproducibleBuildsCertification.value
@@ -192,6 +205,6 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     * See https://wiki.debian.org/ReproducibleBuilds/BuildinfoFiles#File_name_and_encoding
     * @return
     */
-  def targetFilename(source: String, version: String, architecture: String, suffix: Option[String]) =
-    source + "_" + version + "_" + architecture + suffix.map("_" + _).getOrElse("") + ".buildinfo"
+  def targetFilename(source: String, version: String, architecture: Option[String], suffix: Option[String]) =
+    source + "-" + version + architecture.map("_" + _).getOrElse("") + suffix.map("_" + _).getOrElse("") + ".buildinfo"
 }

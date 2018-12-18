@@ -2,7 +2,7 @@
 $ exists target/scala-2.12/stripped/osgi_2.12-0.1.0-SNAPSHOT.jar
 $ must-mirror target/scala-2.12/stripped/osgi_2.12-0.1.0-SNAPSHOT.jar expected/osgi_2.12-0.1.0-SNAPSHOT.jar
 > reproducibleBuildsCertification
-$ exists target/scala-2.12/osgi_2.12_0.1.0-SNAPSHOT_all_STATIC.buildinfo
+$ exists target/scala-2.12/osgi_2.12-0.1.0-SNAPSHOT_STATIC.buildinfo
 # Not on travis:
 #> signedReproducibleBuildsCertification
 #> reproducibleBuildsUploadCertification

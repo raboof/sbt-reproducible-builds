@@ -5,6 +5,7 @@ import java.math.BigInteger
 import java.nio.file.Files
 import java.security.MessageDigest
 
+import sbt.{Artifact, File}
 import sbt.io.syntax.File
 
 import scala.collection.mutable
@@ -19,6 +20,7 @@ object Checksum {
 }
 
 case class Certification(
+                          name: String,
                           groupId: String,
                           artifactId: String,
                           version: String,
@@ -27,11 +29,13 @@ case class Certification(
                           scalaVersion: String,
                           scalaBinaryVersion: String,
                           sbtVersion: String,
-                          checksums: List[Checksum]
+                          checksums: List[Checksum],
+                          date: Long,
                         ) {
   def asPropertyString: String = {
     val packageName = groupId + ":" + artifactId
     val content = mutable.LinkedHashMap(
+      "name" -> name,
       "group_id" -> groupId,
       "artifact_id" -> artifactId,
       "version" -> version,
@@ -44,6 +48,7 @@ case class Certification(
       "sbt.version" -> sbtVersion,
       "scala.version" -> scalaVersion,
       "scala.binary-version" -> scalaBinaryVersion,
+      "date" -> date,
     ) ++ checksums.zipWithIndex.flatMap {
       case (Checksum(filename, length, checksum), idx) =>
         Seq(
@@ -58,6 +63,40 @@ case class Certification(
 
 }
 object Certification {
+  def apply(
+    organization: String,
+    packageName: String,
+    packageVersion: String,
+    packagedArtifacts: Map[Artifact, File],
+    scalaVersion: String,
+    scalaBinaryVersion: String,
+    sbtVersion: String,
+   ): Certification = {
+
+    val artifacts = packagedArtifacts
+      .filter { case (artifact, _) => artifact.`type` == "pom" || artifact.`type` == "jar" }
+
+    val classifier = packagedArtifacts.collectFirst { case (artifact, _) if artifact.`type` == "jar" => artifact.classifier }.flatten
+
+    val checksums: List[Checksum] = artifacts
+      .map { case (_, packagedFile) => Checksum(packagedFile) }
+      .toList
+
+    Certification(
+      packageName,
+      organization,
+      packageName + "_" + scalaBinaryVersion,
+      packageVersion,
+      classifier,
+      "all",
+      scalaVersion,
+      scalaBinaryVersion,
+      sbtVersion,
+      checksums,
+      artifacts.values.map(_.lastModified()).max
+    )
+  }
+
   def apply(propertyString: String): Certification = {
     val properties = new java.util.Properties()
     properties.load(new StringReader(propertyString))
@@ -80,6 +119,7 @@ object Certification {
       }
 
     new Certification(
+      properties.getProperty("name"),
       properties.getProperty("group_id"),
       properties.getProperty("artifact_id"),
       properties.getProperty("version"),
@@ -88,7 +128,8 @@ object Certification {
       properties.getProperty("scala.version"),
       properties.getProperty("scala.binary-version"),
       properties.getProperty("sbt.version"),
-      checksums
+      checksums,
+      properties.getProperty("date").toLong
     )
   }
 }

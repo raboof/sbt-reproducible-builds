@@ -10,8 +10,9 @@ class CertificationSpec extends WordSpec with Matchers {
   "The certification model" should {
     "Roundtrip through Properties format" in {
       val cert = Certification(
-        groupId="net.bzzt",
-        artifactId="simple_2.12",
+        name = "simple",
+        groupId = "net.bzzt",
+        artifactId = "simple_2.12",
         version = "0.12.7",
         classifier = None,
         architecture = "all",
@@ -21,7 +22,8 @@ class CertificationSpec extends WordSpec with Matchers {
         checksums = List(
            Checksum("foo.jar", 42, Array[Byte](0x31, 0x23).toList),
            Checksum("bar-with-weird-characters.xml" , 42, Array[Byte](0x31, 0x33).toList)
-        )
+        ),
+        42
       )
       val asString = cert.asPropertyString
       val roundtripped = Certification(asString)

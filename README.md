@@ -1,5 +1,7 @@
 # sbt-reproducible-builds
 
+![./test.svg](./test.svg)
+
 [sbt](https://www.scala-sbt.org) plugin to make sbt builds more reproducible.
 
 For general information on 'Reproducible Builds', see https://reproducible-builds.org/

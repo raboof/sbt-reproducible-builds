@@ -4,9 +4,9 @@ import java.nio.charset.Charset
 import java.nio.file.Files
 
 import gigahorse.GigahorseSupport
-import sbt.Defaults._
-import sbt.{io=>_,_}
-import sbt.Keys.{scalaVersion, _}
+import sbt.{io => _, _}
+import sbt.Keys._
+import sbt.Classpaths._
 import sbt.plugins.JvmPlugin
 import com.typesafe.sbt.pgp
 import com.typesafe.sbt.pgp.PgpSigner
@@ -14,7 +14,7 @@ import com.typesafe.sbt.pgp.PgpKeys._
 import com.typesafe.sbt.pgp.PgpSettings.{pgpPassphrase => _, pgpSecretRing => _, pgpSigningKey => _, useGpgAgent => _, _}
 import io.github.zlika.reproducible._
 import sbt.io.syntax.{URI, uri}
-import sbt.librarymanagement.{Artifact, Configuration}
+import sbt.librarymanagement.Artifact
 import sbt.librarymanagement.Http.http
 
 import scala.util.{Success, Try}
@@ -28,6 +28,8 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     Try(getClass.getClassLoader.loadClass("com.typesafe.sbt.packager.universal.UniversalPlugin")).isSuccess
 
   override def requires: Plugins = JvmPlugin
+
+  val ReproducibleBuilds = config("reproducible-builds")
 
   val reproducibleBuildsPackageName = settingKey[String]("Package name of this build, including version but excluding disambiguation string")
   val disambiguation = settingKey[Certification => Option[String]]("Generator for optional discriminator string")
@@ -46,7 +48,6 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       Some(sys.env.get("USER").orElse(sys.env.get("USERNAME")).map(_ + "-").getOrElse("") + c.date)
     ),
     packageBin in Compile := postProcessJar((packageBin in Compile).value),
-    artifactPath in reproducibleBuildsCertification := artifactPathSetting(artifact in reproducibleBuildsCertification).value,
     reproducibleBuildsPackageName := moduleName.value,
     reproducibleBuildsCertification := {
       val certification = Certification(
@@ -66,9 +67,10 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
 
       targetFilePath.toFile
     },
+    artifact in ReproducibleBuilds := Artifact(reproducibleBuildsPackageName.value, "buildinfo", "buildinfo"),
     packagedArtifacts ++= {
-      val artifact = Map(
-        Artifact(reproducibleBuildsPackageName.value, "buildinfo", "buildinfo") ->
+      val generatedArtifact = Map(
+        (artifact in ReproducibleBuilds).value ->
         {
           val certification = Certification(
             organization.value,
@@ -89,7 +91,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
         }
       )
 
-      if (publishCertification.value) artifact else Map.empty[Artifact, File]
+      if (publishCertification.value) generatedArtifact else Map.empty[Artifact, File]
     },
     signedReproducibleBuildsCertification := {
       val file = reproducibleBuildsCertification.value
@@ -128,11 +130,61 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
               checkVerification(ours, uploadPrefix.resolve(name))
             })
       }
-    }
+    },
+    ivyConfigurations += ReproducibleBuilds,
   ) ++ (
     if (universalPluginOnClasspath) SbtNativePackagerHelpers.settings
     else Seq.empty
-  )
+  ) ++ inConfig(ReproducibleBuilds)(Seq(
+    packagedArtifacts := {
+      val compiledArtifacts = (packagedArtifacts in Compile).value
+      val generatedArtifact = Map((artifact in ReproducibleBuilds).value -> reproducibleBuildsCertification.value)
+
+      if (publishCertification.value)
+        compiledArtifacts.filter { case (artifact, _) => artifact.`type` == "buildinfo" }
+      else
+        generatedArtifact
+    },
+    publishConfiguration := {
+      publishConfig(
+        publishMavenStyle.value,
+        deliverPattern(crossTarget.value),
+        if (isSnapshot.value) "integration" else "release",
+        ivyConfigurations.value.map(c => ConfigRef(c.name)).toVector,
+        packagedArtifacts.value.toVector,
+        checksums.value.toVector, { //resolvername: not required if publishTo is false
+          val publishToOption = publishTo.value
+          if (publishArtifact.value) getPublishTo(publishToOption).name else "local"
+        },
+        ivyLoggingLevel.value,
+        isSnapshot.value
+      )
+    },
+    publishLocalConfiguration := publishConfig(
+      false, //publishMavenStyle.value,
+      deliverPattern(crossTarget.value),
+      if (isSnapshot.value) "integration" else "release",
+      ivyConfigurations.value.map(c => ConfigRef(c.name)).toVector,
+      packagedArtifacts.value.toVector,
+      checksums.value.toVector,
+      logging = ivyLoggingLevel.value,
+      overwrite = isSnapshot.value
+    ),
+    publishM2Configuration := publishConfig(
+      true,
+      deliverPattern(crossTarget.value),
+      if (isSnapshot.value) "integration" else "release",
+      ivyConfigurations.value.map(c => ConfigRef(c.name)).toVector,
+      packagedArtifacts.value.toVector,
+      checksums = checksums.value.toVector,
+      resolverName = Resolver.publishMavenLocal.name,
+      logging = ivyLoggingLevel.value,
+      overwrite = isSnapshot.value
+    ),
+    publish := publishTask(publishConfiguration).value,
+    publishLocal := publishTask(publishLocalConfiguration).value,
+    publishM2 := publishTask(publishM2Configuration).value
+  ))
 
   def postProcessJar(jar: File): File = postProcessWith(jar, new ZipStripper()
       .addFileStripper("META-INF/MANIFEST.MF", new ManifestStripper())

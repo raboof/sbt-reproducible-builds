@@ -5,7 +5,7 @@ import java.nio.file.Files
 
 import gigahorse.GigahorseSupport
 import sbt.Defaults._
-import sbt.{AutoPlugin, Compile, File, IO, Plugins, taskKey}
+import sbt.{io=>_,_}
 import sbt.Keys.{scalaVersion, _}
 import sbt.plugins.JvmPlugin
 import com.typesafe.sbt.pgp
@@ -29,15 +29,15 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
 
   override def requires: Plugins = JvmPlugin
 
-  val reproducibleBuildsPackageName = taskKey[String]("Package name of this build, including version but excluding disambiguation string")
+  val reproducibleBuildsPackageName = settingKey[String]("Package name of this build, including version but excluding disambiguation string")
+  val disambiguation = settingKey[Certification => Option[String]]("Generator for optional discriminator string")
+  val reproducibleBuildsUploadPrefix = settingKey[URI]("Base URL to send uploads to")
+  val publishCertification = settingKey[Boolean]("Include the certification when publishing")
+
   val reproducibleBuildsCertification = taskKey[File]("Create a Reproducible Builds certification")
-  val publishCertification = taskKey[Boolean]("Include the certification when publishing")
-  val reproducibleBuildsUploadPrefix = taskKey[URI]("Base URL to send uploads to")
   val signedReproducibleBuildsCertification = taskKey[File]("Create a signed Reproducible Builds certification")
   val reproducibleBuildsUploadCertification = taskKey[Unit]("Upload the Reproducible Builds certification")
   val reproducibleBuildsCheckCertification = taskKey[Unit]("Download and compare Reproducible Builds certifications")
-
-  val disambiguation = taskKey[Certification => Option[String]]("Generator for optional discriminator string")
 
   override lazy val projectSettings = Seq(
     publishCertification := true,

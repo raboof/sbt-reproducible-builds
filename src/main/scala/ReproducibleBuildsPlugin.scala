@@ -101,7 +101,15 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       signer.sign(file, new File(file.getAbsolutePath + pgp.gpgExtension), streams.value)
     },
     reproducibleBuildsCheckCertification := {
-      val ours = reproducibleBuildsCertification.value
+      val ours = Certification(
+        organization.value,
+        reproducibleBuildsPackageName.value,
+        version.value,
+        (packagedArtifacts in Compile).value,
+        (scalaVersion in artifactName).value,
+        (scalaBinaryVersion in artifactName).value,
+        sbtVersion.value
+      )
       val groupId = organization.value
       // TODO resolve placeholders and trim file segment
       val uploadPrefix = url((publishTo in ReproducibleBuilds).value.asInstanceOf[URLRepository].patterns.artifactPatterns.head).toURI
@@ -192,16 +200,19 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     out
   }
 
-  private def checkVerification(ours: File, uri: URI): Unit = {
+  private def checkVerification(ours: Certification, uri: URI): Unit = {
       import scala.collection.JavaConverters._
-      val ourSums = parseChecksums(Files.readAllLines(ours.toPath, Charset.forName("UTF-8")).asScala.toList)
+
+      val ourSums = ours.checksums
 
       println("Checking remote builds:")
 
       http.run(GigahorseSupport.url(uri.toASCIIString)).onComplete {
         case Success(v) =>
           println(s"Comparing against $uri (warning: signature not checked):")
-          val remoteSums = parseChecksums(v.bodyAsString.split("\n").toList)
+          val theirPropertyString = v.bodyAsString
+          val theirs = Certification(theirPropertyString)
+          val remoteSums = theirs.checksums
           ourSums.foreach { ourSum =>
             if (remoteSums.contains(ourSum)) {
               println(s"Match: $ourSum")
@@ -211,14 +222,6 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
           }
       }
     }
-
-  private def parseChecksums(lines: List[String]) = {
-    lines
-      .dropWhile(!_.startsWith("Checksums-Sha256"))
-      .drop(1)
-      .takeWhile(_.startsWith("  "))
-      .map(_.drop(2))
-  }
 
   /**
     *  A GpgSigner that uses the command-line to run gpg.

@@ -15,7 +15,6 @@ class CertificationSpec extends WordSpec with Matchers {
         artifactId = "simple_2.12",
         version = "0.12.7",
         classifier = None,
-        architecture = "all",
         scalaVersion = "0.9",
         scalaBinaryVersion = "0.12",
         sbtVersion = "1.2.7",

@@ -14,7 +14,7 @@ case class Checksum(filename: String, length: Int, checksum: List[Byte])
 object Checksum {
   def apply(file: File): Checksum = {
     val bytes = Files.readAllBytes(file.toPath)
-    val digest = MessageDigest.getInstance("SHA-256")
+    val digest = MessageDigest.getInstance("SHA-512")
     new Checksum(file.getName, bytes.length, digest.digest(bytes).toList)
   }
 }
@@ -25,7 +25,6 @@ case class Certification(
                           artifactId: String,
                           version: String,
                           classifier: Option[String],
-                          architecture: String,
                           scalaVersion: String,
                           scalaBinaryVersion: String,
                           sbtVersion: String,
@@ -36,15 +35,13 @@ case class Certification(
     val packageName = groupId + ":" + artifactId
     val content = mutable.LinkedHashMap(
       "name" -> name,
-      "group_id" -> groupId,
-      "artifact_id" -> artifactId,
+      "group-id" -> groupId,
+      "artifact-id" -> artifactId,
       "version" -> version,
-      "build_architecture" -> architecture,
-      "source" -> packageName,
-      "binary" -> packageName,
-      "package" -> packageName,
       // Extra 'custom' fields:
       "java.version" -> System.getProperty("java.version"),
+      "os.name" -> System.getProperty("os.name"),
+      "build-tool" -> "sbt",
       "sbt.version" -> sbtVersion,
       "scala.version" -> scalaVersion,
       "scala.binary-version" -> scalaBinaryVersion,
@@ -52,9 +49,9 @@ case class Certification(
     ) ++ checksums.zipWithIndex.flatMap {
       case (Checksum(filename, length, checksum), idx) =>
         Seq(
-          s"checksums_sha256.$idx.filename" -> filename,
-          s"checksums_sha256.$idx.length" -> length.toString,
-          s"checksums_sha256.$idx.checksum" -> checksum.map("%02x" format _).mkString,
+          s"outputs.$idx.filename" -> filename,
+          s"outputs.$idx.length" -> length.toString,
+          s"outputs.$idx.checksums.sha512" -> checksum.map("%02x" format _).mkString,
         )
     } ++ classifier.map("classifier" -> _)
 
@@ -88,7 +85,6 @@ object Certification {
       packageName + "_" + scalaBinaryVersion,
       packageVersion,
       classifier,
-      "all",
       scalaVersion,
       scalaBinaryVersion,
       sbtVersion,
@@ -105,7 +101,7 @@ object Certification {
     val checksums = properties
       .stringPropertyNames()
       .asScala
-      .filter(_.startsWith("checksums_sha256"))
+      .filter(_.startsWith("outputs"))
       .groupBy(key => key.split("\\.")(1))
       .toList
       .sortBy(_._1)
@@ -113,18 +109,17 @@ object Certification {
       .map { keys =>
           val filename = properties.getProperty(keys.find(_.endsWith(".filename")).get)
           val length = Integer.parseInt(properties.getProperty(keys.find(_.endsWith(".length")).get))
-          val checksum = properties.getProperty(keys.find(_.endsWith(".checksum")).get)
+          val checksum = properties.getProperty(keys.find(_.endsWith(".checksums.sha512")).get)
           val bs = new BigInteger(checksum, 16)
           Checksum(filename, length, bs.toByteArray.toList)
       }
 
     new Certification(
       properties.getProperty("name"),
-      properties.getProperty("group_id"),
-      properties.getProperty("artifact_id"),
+      properties.getProperty("group-id"),
+      properties.getProperty("artifact-id"),
       properties.getProperty("version"),
       Option(properties.getProperty("classifier")),
-      properties.getProperty("build_architecture"),
       properties.getProperty("scala.version"),
       properties.getProperty("scala.binary-version"),
       properties.getProperty("sbt.version"),

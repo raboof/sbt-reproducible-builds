@@ -1,5 +1,6 @@
 package net.bzzt.reproduciblebuilds
 
+import java.net.InetAddress
 import java.nio.charset.Charset
 import java.nio.file.Files
 
@@ -14,7 +15,7 @@ import com.typesafe.sbt.pgp.PgpKeys._
 import com.typesafe.sbt.pgp.PgpSettings.{pgpPassphrase => _, pgpSecretRing => _, pgpSigningKey => _, useGpgAgent => _, _}
 import io.github.zlika.reproducible._
 import sbt.io.syntax.{URI, uri}
-import sbt.librarymanagement.Artifact
+import sbt.librarymanagement.{Artifact, URLRepository}
 import sbt.librarymanagement.Http.http
 
 import scala.util.{Success, Try}
@@ -31,22 +32,23 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
 
   val ReproducibleBuilds = config("reproducible-builds")
 
-  val reproducibleBuildsPackageName = settingKey[String]("Package name of this build, including version but excluding disambiguation string")
-  val disambiguation = settingKey[Certification => Option[String]]("Generator for optional discriminator string")
-  val reproducibleBuildsUploadPrefix = settingKey[URI]("Base URL to send uploads to")
+  val reproducibleBuildsPackageName = settingKey[String]("Package name of this build, including version")
   val publishCertification = settingKey[Boolean]("Include the certification when publishing")
+  val hostname = settingKey[String]("The hostname to include when publishing 3rd-party attestations")
 
   val reproducibleBuildsCertification = taskKey[File]("Create a Reproducible Builds certification")
   val signedReproducibleBuildsCertification = taskKey[File]("Create a signed Reproducible Builds certification")
-  val reproducibleBuildsUploadCertification = taskKey[Unit]("Upload the Reproducible Builds certification")
   val reproducibleBuildsCheckCertification = taskKey[Unit]("Download and compare Reproducible Builds certifications")
+
+  val bzztNetResolver = Resolver.url("repo.bzzt.net", url("http://repo.bzzt.net:8000"))(Patterns().withArtifactPatterns(Vector(
+    // We default to a Maven-style pattern with host and timestamp to reduce naming collisions, and branch if populated
+    "[organisation]/[module](_[scalaVersion])(_[sbtVersion])/([branch]/)[revision]/[artifact]-[revision](-[classifier])(-[host])(-[timestamp]).[ext]"
+  )))
 
   override lazy val projectSettings = Seq(
     publishCertification := true,
-    reproducibleBuildsUploadPrefix := uri("http://localhost:8000/"),
-    disambiguation in Compile := ((c: Certification) =>
-      Some(sys.env.get("USER").orElse(sys.env.get("USERNAME")).map(_ + "-").getOrElse("") + c.date)
-    ),
+    hostname := InetAddress.getLocalHost.getHostName,
+    resolvers += bzztNetResolver,
     packageBin in Compile := postProcessJar((packageBin in Compile).value),
     reproducibleBuildsPackageName := moduleName.value,
     reproducibleBuildsCertification := {
@@ -61,7 +63,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       )
 
       val targetDirPath = crossTarget.value
-      val targetFilePath = targetDirPath.toPath.resolve(targetFilename(certification.artifactId, certification.version, certification.classifier, (disambiguation in Compile).value(certification)))
+      val targetFilePath = targetDirPath.toPath.resolve(targetFilename(certification.artifactId, certification.version, certification.classifier))
 
       Files.write(targetFilePath, certification.asPropertyString.getBytes(Charset.forName("UTF-8")))
 
@@ -83,7 +85,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
           )
 
           val targetDirPath = crossTarget.value
-          val targetFilePath = targetDirPath.toPath.resolve(targetFilename(certification.artifactId, certification.version, certification.classifier, (disambiguation in Compile).value(certification)))
+          val targetFilePath = targetDirPath.toPath.resolve(targetFilename(certification.artifactId, certification.version, certification.classifier))
 
           Files.write(targetFilePath, certification.asPropertyString.getBytes(Charset.forName("UTF-8")))
 
@@ -98,24 +100,11 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       val signer = new CleartextCommandLineGpgSigner(gpgCommand.value, useGpgAgent.value, pgpSigningKey.value, pgpPassphrase.value)
       signer.sign(file, new File(file.getAbsolutePath + pgp.gpgExtension), streams.value)
     },
-    reproducibleBuildsUploadCertification := {
-      val file = signedReproducibleBuildsCertification.value
-      val groupId = organization.value
-      val uploadPrefix = reproducibleBuildsUploadPrefix.value
-      val uri = uploadPrefix.resolve(groupId + "/" + reproducibleBuildsPackageName.value + "/" + version.value + "/")
-        .resolve(file.getName)
-
-      import gigahorse.HttpWrite._
-      http.run(
-        GigahorseSupport.url(uri.toASCIIString)
-          .withMethod("PUT")
-          // TODO content-type
-          .withBody(new String(Files.readAllBytes(file.toPath), Charset.forName("UTF-8"))))
-    },
     reproducibleBuildsCheckCertification := {
       val ours = reproducibleBuildsCertification.value
       val groupId = organization.value
-      val uploadPrefix = reproducibleBuildsUploadPrefix.value
+      // TODO resolve placeholders and trim file segment
+      val uploadPrefix = url((publishTo in ReproducibleBuilds).value.asInstanceOf[URLRepository].patterns.artifactPatterns.head).toURI
       val uri = uploadPrefix.resolve(groupId + "/" + reproducibleBuildsPackageName.value + "/" + version.value + "/")
       http.run(GigahorseSupport.url(uri.toASCIIString)).onComplete {
         case Success(v) =>
@@ -140,11 +129,14 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       val compiledArtifacts = (packagedArtifacts in Compile).value
       val generatedArtifact = Map((artifact in ReproducibleBuilds).value -> reproducibleBuildsCertification.value)
 
-      if (publishCertification.value)
-        compiledArtifacts.filter { case (artifact, _) => artifact.`type` == "buildinfo" }
-      else
-        generatedArtifact
+      val artifacts =
+        if (publishCertification.value)
+          compiledArtifacts.filter { case (artifact, _) => artifact.`type` == "buildinfo" }
+        else
+          generatedArtifact
+      artifacts.map { case (key, value) => (key.withExtraAttributes(key.extraAttributes ++ Map("host"->hostname.value, "timestamp" -> (System.currentTimeMillis() / 1000l).toString)), value) }
     },
+    publishTo := Some(bzztNetResolver),
     publishConfiguration := {
       publishConfig(
         publishMavenStyle.value,
@@ -257,6 +249,6 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     * See https://wiki.debian.org/ReproducibleBuilds/BuildinfoFiles#File_name_and_encoding
     * @return
     */
-  def targetFilename(source: String, version: String, architecture: Option[String], suffix: Option[String]) =
+  def targetFilename(source: String, version: String, architecture: Option[String], suffix: Option[String] = None) =
     source + "-" + version + architecture.map("_" + _).getOrElse("") + suffix.map("_" + _).getOrElse("") + ".buildinfo"
 }

@@ -2,8 +2,7 @@
 $ exists target/scala-2.12/stripped/native-packager_2.12-0.1.0-SNAPSHOT.jar
 $ must-mirror target/scala-2.12/stripped/native-packager_2.12-0.1.0-SNAPSHOT.jar expected/native-packager_2.12-0.1.0-SNAPSHOT.jar
 > reproducibleBuildsCertification
-$ exists target/scala-2.12/native-packager_2.12-0.1.0-SNAPSHOT_STATIC.buildinfo
+$ exists target/scala-2.12/native-packager_2.12-0.1.0-SNAPSHOT.buildinfo
 # Not on travis:
 #> signedReproducibleBuildsCertification
-#> reproducibleBuildsUploadCertification
 #> reproducibleBuildsCheckCertification

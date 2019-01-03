@@ -71,11 +71,12 @@ certification from Travis.
 
 ### Checking certifications
 
-Check your certification with other uploaded
+You can check your certification against other uploaded
 certifications with `reproducibleBuildsCheckCertification`
 
-This currently does not work since we are evolving the way we are sharing
-certifications.
+Checking your certification with the 'official' published
+certification is currently
+[not yet implemented](https://github.com/raboof/sbt-reproducible-builds/issues/69).
 
 ## Drinking our own champagne
 

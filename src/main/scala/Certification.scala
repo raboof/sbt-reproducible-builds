@@ -10,7 +10,9 @@ import sbt.io.syntax.File
 
 import scala.collection.mutable
 
-case class Checksum(filename: String, length: Int, checksum: List[Byte])
+case class Checksum(filename: String, length: Int, checksum: List[Byte]) {
+  def hexChecksum = checksum.map("%02x" format _).mkString
+}
 object Checksum {
   def apply(file: File): Checksum = {
     val bytes = Files.readAllBytes(file.toPath)
@@ -31,6 +33,11 @@ case class Certification(
                           checksums: List[Checksum],
                           date: Long,
                         ) {
+  require(
+    checksums.map(_.filename).toSet.size == checksums.length,
+    "Checksum filenames should be unique"
+  )
+
   def asPropertyString: String = {
     val packageName = groupId + ":" + artifactId
     val content = mutable.LinkedHashMap(
@@ -47,11 +54,11 @@ case class Certification(
       "scala.binary-version" -> scalaBinaryVersion,
       "date" -> date,
     ) ++ checksums.zipWithIndex.flatMap {
-      case (Checksum(filename, length, checksum), idx) =>
+      case (checksum @ Checksum(filename, length, _), idx) =>
         Seq(
           s"outputs.$idx.filename" -> filename,
           s"outputs.$idx.length" -> length.toString,
-          s"outputs.$idx.checksums.sha512" -> checksum.map("%02x" format _).mkString,
+          s"outputs.$idx.checksums.sha512" -> checksum.hexChecksum,
         )
     } ++ classifier.map("classifier" -> _)
 
@@ -110,8 +117,8 @@ object Certification {
           val filename = properties.getProperty(keys.find(_.endsWith(".filename")).get)
           val length = Integer.parseInt(properties.getProperty(keys.find(_.endsWith(".length")).get))
           val checksum = properties.getProperty(keys.find(_.endsWith(".checksums.sha512")).get)
-          val bs = new BigInteger(checksum, 16)
-          Checksum(filename, length, bs.toByteArray.toList)
+          val bs = new BigInteger(checksum, 16).toByteArray.toList.reverse.padTo[Byte, List[Byte]](64, Byte.box(0x00)).take(64).reverse
+          Checksum(filename, length, bs)
       }
 
     new Certification(

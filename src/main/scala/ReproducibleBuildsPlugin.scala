@@ -4,6 +4,8 @@ import java.net.InetAddress
 import java.nio.charset.Charset
 import java.nio.file.Files
 
+import scala.concurrent.duration._
+
 import gigahorse.GigahorseSupport
 import sbt.{io => _, _}
 import sbt.Keys._
@@ -14,6 +16,7 @@ import com.typesafe.sbt.pgp.PgpSigner
 import com.typesafe.sbt.pgp.PgpKeys._
 import com.typesafe.sbt.pgp.PgpSettings.{pgpPassphrase => _, pgpSecretRing => _, pgpSigningKey => _, useGpgAgent => _, _}
 import io.github.zlika.reproducible._
+import org.apache.ivy.core.IvyPatternHelper
 import sbt.io.syntax.{URI, uri}
 import sbt.librarymanagement.{Artifact, URLRepository}
 import sbt.librarymanagement.Http.http
@@ -22,6 +25,7 @@ import scala.util.{Success, Try}
 import spray.json._
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Await, Future}
 
 object ReproducibleBuildsPlugin extends AutoPlugin {
   // To make sure we're loaded after the defaults
@@ -32,7 +36,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
 
   val ReproducibleBuilds = config("reproducible-builds")
 
-  val reproducibleBuildsPackageName = settingKey[String]("Package name of this build, including version")
+  val reproducibleBuildsPackageName = settingKey[String]("Module name of this build")
   val publishCertification = settingKey[Boolean]("Include the certification when publishing")
   val hostname = settingKey[String]("The hostname to include when publishing 3rd-party attestations")
 
@@ -111,22 +115,41 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
         sbtVersion.value
       )
       val groupId = organization.value
-      // TODO resolve placeholders and trim file segment
-      val uploadPrefix = url((publishTo in ReproducibleBuilds).value.asInstanceOf[URLRepository].patterns.artifactPatterns.head).toURI
-      val uri = uploadPrefix.resolve(groupId + "/" + reproducibleBuildsPackageName.value + "/" + version.value + "/")
-      http.run(GigahorseSupport.url(uri.toASCIIString)).onComplete {
-        case Success(v) =>
-          v.bodyAsString
+      // TODO also check against the 'official' published buildinfo
+      val pattern = (publishTo in ReproducibleBuilds).value.getOrElse(bzztNetResolver).asInstanceOf[URLRepository].patterns.artifactPatterns.head
+      val prefixPattern = pattern.substring(0, pattern.lastIndexOf("/") + 1)
+      val prefix = IvyPatternHelper.substitute(
+        prefixPattern,
+        organization.value.replace('.', '/'),
+        ours.artifactId,
+        version.value,
+        ours.artifactId,
+        "buildinfo",
+        "buildinfo",
+        "compile"
+      )
+      // TODO add Accept header to request JSON-formatted
+      val done = http.run(GigahorseSupport.url(prefix)).flatMap { entity =>
+          val results = entity.bodyAsString
             .parseJson
             .asInstanceOf[JsArray]
             .elements
             .map(_.asInstanceOf[JsObject])
-            .filter(_.fields("type").asInstanceOf[JsString].value == "file")
-            .map(_.fields("name").asInstanceOf[JsString].value)
-            .foreach(name => {
-              checkVerification(ours, uploadPrefix.resolve(name))
-            })
+            .map(_.fields.get("name"))
+            .collect { case Some(JsString(objectname)) if objectname.endsWith(".buildinfo") => objectname }
+            .map(name => checkVerification(ours, uri(prefix).resolve(name)))
+          Future.sequence(results)
+      }.map { resultList =>
+        println(s"Processed ${resultList.size} results. ${resultList.count(_.ok)} matching attestations, ${resultList.filterNot(_.ok).size} mismatches");
+        resultList.foreach { result =>
+          println(s"${result.uri}:")
+          println("- " + (if (result.ok) "OK" else "NOT OK"))
+          result.verdicts.foreach {
+            case (filename, verdict) => println(s"- $filename: $verdict")
+          }
+        }
       }
+      Await.result(done, 30.seconds)
     },
     ivyConfigurations += ReproducibleBuilds,
   ) ++ (
@@ -200,26 +223,12 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     out
   }
 
-  private def checkVerification(ours: Certification, uri: URI): Unit = {
-      import scala.collection.JavaConverters._
-
+  private def checkVerification(ours: Certification, uri: URI): Future[VerificationResult] = {
       val ourSums = ours.checksums
 
-      println("Checking remote builds:")
-
-      http.run(GigahorseSupport.url(uri.toASCIIString)).onComplete {
-        case Success(v) =>
-          println(s"Comparing against $uri (warning: signature not checked):")
-          val theirPropertyString = v.bodyAsString
-          val theirs = Certification(theirPropertyString)
-          val remoteSums = theirs.checksums
-          ourSums.foreach { ourSum =>
-            if (remoteSums.contains(ourSum)) {
-              println(s"Match: $ourSum")
-            } else {
-              println(s"Mismatch: our $ourSum not found in $remoteSums")
-            }
-          }
+      http.run(GigahorseSupport.url(uri.toASCIIString)).map { entity =>
+        val theirs = Certification(entity.bodyAsString)
+        VerificationResult(uri, ourSums, theirs.checksums)
       }
     }
 

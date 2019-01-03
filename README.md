@@ -38,15 +38,19 @@ As this plugin as well as the sbt-osgi plugin redefine the `packageBin` task, it
 
 ### Describe your build as a 'buildinfo' certification
 
-You can now generate a signed description of the build environment with the
-sbt task `signedReproducibleBuildsCertification`. This certification will
+You can now generate a description of the build environment with the
+sbt task `reproducibleBuildsCertification`. This certification will
 also be included when publishing your project. If you want to disable this,
 you can set `publishCertification := false`.
+
+To sign the certification, configure [sbt-gpg](https://github.com/jodersky/sbt-gpg)
+and either simply `publishLocal`, or, for example if you have `publishCertification := false`,
+`reproducible-builds:publishLocal`.
 
 ### Sharing certifications
 
 If you are a (3rd-party or 'official') rebuilder, you can use the
-'reproducible-builds:publish' task to publish the buildinfo to a
+`reproducible-builds:publish` task to publish the buildinfo to a
 [reproducible-builds-certification-repository](http://github.com/raboof/reproducible-builds-certification-repository) instance.
 
 #### Uploading certifications from Travis

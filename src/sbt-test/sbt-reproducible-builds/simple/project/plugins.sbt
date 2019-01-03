@@ -6,3 +6,6 @@ sys.props.get("plugin.version") match {
 
 // Included but not used, to catch problems with that combination:
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.3.15")
+
+// to easily test sbt-gpg integration manually
+addSbtPlugin("io.crashbox" % "sbt-gpg" % "0.2.0")

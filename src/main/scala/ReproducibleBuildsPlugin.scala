@@ -5,16 +5,11 @@ import java.nio.charset.Charset
 import java.nio.file.Files
 
 import scala.concurrent.duration._
-
 import gigahorse.GigahorseSupport
 import sbt.{io => _, _}
 import sbt.Keys._
 import sbt.Classpaths._
 import sbt.plugins.JvmPlugin
-import com.typesafe.sbt.pgp
-import com.typesafe.sbt.pgp.PgpSigner
-import com.typesafe.sbt.pgp.PgpKeys._
-import com.typesafe.sbt.pgp.PgpSettings.{pgpPassphrase => _, pgpSecretRing => _, pgpSigningKey => _, useGpgAgent => _, _}
 import io.github.zlika.reproducible._
 import org.apache.ivy.core.IvyPatternHelper
 import sbt.io.syntax.{URI, uri}
@@ -32,6 +27,9 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
   val universalPluginOnClasspath =
     Try(getClass.getClassLoader.loadClass("com.typesafe.sbt.packager.universal.UniversalPlugin")).isSuccess
 
+  val gpgPluginOnClasspath =
+    Try(getClass.getClassLoader.loadClass("io.crashbox.gpg.SbtGpg")).isSuccess
+
   override def requires: Plugins = JvmPlugin
 
   val ReproducibleBuilds = config("reproducible-builds")
@@ -41,7 +39,6 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
   val hostname = settingKey[String]("The hostname to include when publishing 3rd-party attestations")
 
   val reproducibleBuildsCertification = taskKey[File]("Create a Reproducible Builds certification")
-  val signedReproducibleBuildsCertification = taskKey[File]("Create a signed Reproducible Builds certification")
   val reproducibleBuildsCheckCertification = taskKey[Unit]("Download and compare Reproducible Builds certifications")
 
   val bzztNetResolver = Resolver.url("repo.bzzt.net", url("http://repo.bzzt.net:8000"))(Patterns().withArtifactPatterns(Vector(
@@ -98,11 +95,6 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       )
 
       if (publishCertification.value) generatedArtifact else Map.empty[Artifact, File]
-    },
-    signedReproducibleBuildsCertification := {
-      val file = reproducibleBuildsCertification.value
-      val signer = new CleartextCommandLineGpgSigner(gpgCommand.value, useGpgAgent.value, pgpSigningKey.value, pgpPassphrase.value)
-      signer.sign(file, new File(file.getAbsolutePath + pgp.gpgExtension), streams.value)
     },
     reproducibleBuildsCheckCertification := {
       val ours = Certification(
@@ -167,7 +159,8 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
           generatedArtifact
       artifacts.map { case (key, value) => (key.withExtraAttributes(key.extraAttributes ++ Map("host"->hostname.value, "timestamp" -> (System.currentTimeMillis() / 1000l).toString)), value) }
     },
-    publishTo := Some(bzztNetResolver),
+    publishTo := Some(bzztNetResolver)
+  ) ++ gpgPluginSettings ++ Seq(
     publishConfiguration := {
       publishConfig(
         publishMavenStyle.value,
@@ -209,6 +202,10 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     publishM2 := publishTask(publishM2Configuration).value
   ))
 
+  private def gpgPluginSettings =
+    if (gpgPluginOnClasspath) GpgHelpers.settings
+    else Seq.empty
+
   def postProcessJar(jar: File): File = postProcessWith(jar, new ZipStripper()
       .addFileStripper("META-INF/MANIFEST.MF", new ManifestStripper())
       .addFileStripper("META-INF/maven/\\S*/pom.properties", new PomPropertiesStripper()))
@@ -231,29 +228,6 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
         VerificationResult(uri, ourSums, theirs.checksums)
       }
     }
-
-  /**
-    *  A GpgSigner that uses the command-line to run gpg.
-    *
-    * Taken from sbt-pgp, but:
-    * * changed '--detach-sign' to '--clearsign'
-    *   (needs to be '--clearsign' rather than '--clear-sign' to support gnupg 1.4.x)
-    * * removed 'secRing' (see https://github.com/sbt/sbt-pgp/issues/126)
-    */
-  private class CleartextCommandLineGpgSigner(command: String, agent: Boolean, optKey: Option[Long], optPassphrase: Option[Array[Char]]) extends PgpSigner {
-    def sign(file: File, signatureFile: File, s: TaskStreams): File = {
-      if (signatureFile.exists) IO.delete(signatureFile)
-      val passargs: Seq[String] = (optPassphrase map { passArray => passArray mkString "" } map { pass => Seq("--passphrase", pass) }) getOrElse Seq.empty
-      val keyargs: Seq[String] = optKey map (k => Seq("--default-key", "0x%x" format (k))) getOrElse Seq.empty
-      val args = passargs ++ Seq("--clearsign", "--armor") ++ (if (agent) Seq("--use-agent") else Seq.empty) ++ keyargs
-      sys.process.Process(command, args ++ Seq("--output", signatureFile.getAbsolutePath, file.getAbsolutePath)) !< match {
-        case 0 => ()
-        case n => sys.error("Failure running gpg --clearsign.  Exit code: " + n)
-      }
-      signatureFile
-    }
-    override val toString: String = "RB GPG-Command(" + command + ")"
-  }
 
   /**
     * Determine the target filename.

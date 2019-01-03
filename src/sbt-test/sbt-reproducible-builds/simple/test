@@ -4,5 +4,4 @@ $ must-mirror target/scala-2.12/stripped/simple_2.12-0.1.0-SNAPSHOT.jar expected
 > reproducibleBuildsCertification
 $ exists target/scala-2.12/simple_2.12-0.1.0-SNAPSHOT.buildinfo
 # Not on travis:
-#> signedReproducibleBuildsCertification
 #> reproducibleBuildsCheckCertification

@@ -4,5 +4,4 @@ $ must-mirror target/scala-2.12/stripped/osgi_2.12-0.1.0-SNAPSHOT.jar expected/o
 > reproducibleBuildsCertification
 $ exists target/scala-2.12/osgi_2.12-0.1.0-SNAPSHOT.buildinfo
 # Not on travis:
-#> signedReproducibleBuildsCertification
 #> reproducibleBuildsCheckCertification

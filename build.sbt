@@ -17,13 +17,14 @@ enablePlugins(SbtPlugin)
 enablePlugins(ScriptedPlugin)
 
 libraryDependencies += "net.bzzt" % "reproducible-builds-jvm-stripper" % "0.9"
-libraryDependencies += "com.jsuereth" % "sbt-pgp" % sbtPgpVersion
 libraryDependencies += "io.spray" %%  "spray-json" % "1.3.5"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5" % "test"
 
 // Optional integration:
 addSbtPlugin("com.typesafe.sbt" %% "sbt-native-packager" % "1.3.15" % Provided)
+addSbtPlugin("io.crashbox" %% "sbt-gpg" % "0.2.0" % Provided)
+// addSbtPlugin("com.jsuereth" % "sbt-pgp" % sbtPgpVersion % Provided)
 
 // Dogfood^WChampagne time!
 import net.bzzt.reproduciblebuilds.ReproducibleBuildsPlugin._
@@ -35,6 +36,3 @@ scriptedLaunchOpts := { scriptedLaunchOpts.value ++
   Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
 }
 scriptedBufferLog := false
-
-// Transitive plugin dependency:
-addSbtPlugin("com.jsuereth" % "sbt-pgp" % sbtPgpVersion)

@@ -91,3 +91,10 @@ exact same binary.
 When this is not the case, this is to be considered a bug and a bug report with
 the binary, the buildinfo and any additional information about any peculiarities of the build system would be
 greatly appreciated!
+
+## Further recommendations
+
+Some further recommendations to make your builds more reproducible:
+
+* Specify `scalaVersion` (and if applicable `crossScalaVersions`) in your build configuration
+* Use [sbt-strict-scala-versions](https://github.com/raboof/sbt-strict-scala-versions) to ensure always using those Scala versions (`addSbtPlugin("net.bzzt" % "sbt-strict-scala-versions" % "0.0.1")`)

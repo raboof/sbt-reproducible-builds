@@ -26,10 +26,6 @@ addSbtPlugin("com.typesafe.sbt" %% "sbt-native-packager" % "1.3.15" % Provided)
 addSbtPlugin("io.crashbox" %% "sbt-gpg" % "0.2.0" % Provided)
 // addSbtPlugin("com.jsuereth" % "sbt-pgp" % sbtPgpVersion % Provided)
 
-// Dogfood^WChampagne time!
-import net.bzzt.reproduciblebuilds.ReproducibleBuildsPlugin._
-reproducibleBuildsUploadPrefix := uri("http://pi.bzzt.net:8081/")
-
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 
 scriptedLaunchOpts := { scriptedLaunchOpts.value ++

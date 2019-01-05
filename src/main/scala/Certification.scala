@@ -41,6 +41,7 @@ case class Certification(
   def asPropertyString: String = {
     val packageName = groupId + ":" + artifactId
     val content = mutable.LinkedHashMap(
+      "buildinfo.version" -> "0.1-SNAPSHOT",
       "name" -> name,
       "group-id" -> groupId,
       "artifact-id" -> artifactId,

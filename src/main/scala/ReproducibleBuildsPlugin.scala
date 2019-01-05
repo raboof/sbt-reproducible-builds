@@ -163,7 +163,8 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
   ) ++ gpgPluginSettings ++ Seq(
     publishConfiguration := {
       publishConfig(
-        publishMavenStyle.value,
+        // avoid uploading an ivy-[version].xml
+        publishMavenStyle = true,
         deliverPattern(crossTarget.value),
         if (isSnapshot.value) "integration" else "release",
         ivyConfigurations.value.map(c => ConfigRef(c.name)).toVector,
@@ -177,7 +178,8 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       )
     },
     publishLocalConfiguration := publishConfig(
-      false, //publishMavenStyle.value,
+      // avoid overwriting an ivy-[version].xml
+      publishMavenStyle = true,
       deliverPattern(crossTarget.value),
       if (isSnapshot.value) "integration" else "release",
       ivyConfigurations.value.map(c => ConfigRef(c.name)).toVector,
@@ -187,7 +189,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       overwrite = isSnapshot.value
     ),
     publishM2Configuration := publishConfig(
-      true,
+      publishMavenStyle = true,
       deliverPattern(crossTarget.value),
       if (isSnapshot.value) "integration" else "release",
       ivyConfigurations.value.map(c => ConfigRef(c.name)).toVector,

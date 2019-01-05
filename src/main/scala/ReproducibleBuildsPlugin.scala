@@ -110,16 +110,27 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       // TODO also check against the 'official' published buildinfo
       val pattern = (publishTo in ReproducibleBuilds).value.getOrElse(bzztNetResolver).asInstanceOf[URLRepository].patterns.artifactPatterns.head
       val prefixPattern = pattern.substring(0, pattern.lastIndexOf("/") + 1)
+      import scala.collection.JavaConverters._
+      val extraModuleAttributes = {
+        val scalaVer = Map("scalaVersion" -> scalaBinaryVersion.value)
+        if (sbtPlugin.value) scalaVer + ("sbtVersion" -> sbtBinaryVersion.value)
+        else scalaVer
+      }.asJava
+
       val prefix = IvyPatternHelper.substitute(
         prefixPattern,
         organization.value.replace('.', '/'),
-        ours.artifactId,
+        reproducibleBuildsPackageName.value,
         version.value,
-        ours.artifactId,
+        reproducibleBuildsPackageName.value,
         "buildinfo",
         "buildinfo",
-        "compile"
+        "compile",
+        extraModuleAttributes,
+        null
       )
+      val log = streams.value.log
+      log.info(s"Discovering certifications at [$prefix]")
       // TODO add Accept header to request JSON-formatted
       val done = http.run(GigahorseSupport.url(prefix)).flatMap { entity =>
           val results = entity.bodyAsString
@@ -132,12 +143,12 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
             .map(name => checkVerification(ours, uri(prefix).resolve(name)))
           Future.sequence(results)
       }.map { resultList =>
-        println(s"Processed ${resultList.size} results. ${resultList.count(_.ok)} matching attestations, ${resultList.filterNot(_.ok).size} mismatches");
+        log.info(s"Processed ${resultList.size} results. ${resultList.count(_.ok)} matching attestations, ${resultList.filterNot(_.ok).size} mismatches");
         resultList.foreach { result =>
-          println(s"${result.uri}:")
-          println("- " + (if (result.ok) "OK" else "NOT OK"))
+          log.info(s"${result.uri}:")
+          log.info("- " + (if (result.ok) "OK" else "NOT OK"))
           result.verdicts.foreach {
-            case (filename, verdict) => println(s"- $filename: $verdict")
+            case (filename, verdict) => log.info(s"- $filename: $verdict")
           }
         }
       }

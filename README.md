@@ -92,6 +92,16 @@ When this is not the case, this is to be considered a bug and a bug report with
 the binary, the buildinfo and any additional information about any peculiarities of the build system would be
 greatly appreciated!
 
+## Limitations
+
+### ivy.xml is not included
+
+When using Ivy-style publishing (which is notably common for sbt plugins), the
+ivy.xml is not currently part of the published buildinfo. This is a problem
+because this file contains the transitive dependencies for the artifact, so a
+backdoor can be introduced by adding a rogue transitive dependency to this
+file. This issue is tracked under [#84](https://github.com/raboof/sbt-reproducible-builds/issues/84).
+
 ## Further recommendations
 
 Some further recommendations to make your builds more reproducible:

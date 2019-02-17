@@ -7,6 +7,7 @@ import java.security.MessageDigest
 
 import sbt.{Artifact, File}
 import sbt.io.syntax.File
+import sbt.librarymanagement.ScmInfo
 
 import scala.collection.mutable
 
@@ -26,6 +27,7 @@ case class Certification(
                           groupId: String,
                           artifactId: String,
                           version: String,
+                          scmUri: Option[String],
                           classifier: Option[String],
                           scalaVersion: String,
                           scalaBinaryVersion: String,
@@ -61,7 +63,10 @@ case class Certification(
           s"outputs.$idx.length" -> length.toString,
           s"outputs.$idx.checksums.sha512" -> checksum.hexChecksum,
         )
-    } ++ classifier.map("classifier" -> _)
+    } ++
+      classifier.map("classifier" -> _) ++
+      scmUri.map("source.scm.uri" -> _)
+
 
     content.map { case (key, value) => key + "=" + value }.mkString("\n")
   }
@@ -72,6 +77,7 @@ object Certification {
     organization: String,
     packageName: String,
     packageVersion: String,
+    scmInfo: Option[ScmInfo],
     packagedArtifacts: Map[Artifact, File],
     scalaVersion: String,
     scalaBinaryVersion: String,
@@ -92,6 +98,7 @@ object Certification {
       organization,
       packageName + "_" + scalaBinaryVersion,
       packageVersion,
+      scmInfo.flatMap(_.devConnection),
       classifier,
       scalaVersion,
       scalaBinaryVersion,
@@ -127,6 +134,7 @@ object Certification {
       properties.getProperty("group-id"),
       properties.getProperty("artifact-id"),
       properties.getProperty("version"),
+      Option(properties.getProperty("source.scm.uri")),
       Option(properties.getProperty("classifier")),
       properties.getProperty("scala.version"),
       properties.getProperty("scala.binary-version"),

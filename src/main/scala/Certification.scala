@@ -98,7 +98,7 @@ object Certification {
       organization,
       packageName + "_" + scalaBinaryVersion,
       packageVersion,
-      scmInfo.flatMap(_.devConnection),
+      scmInfo.map(info => info.devConnection.getOrElse(info.connection)),
       classifier,
       scalaVersion,
       scalaBinaryVersion,

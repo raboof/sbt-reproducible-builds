@@ -28,7 +28,27 @@ And to `build.sbt`:
 enablePlugins(ReproducibleBuildsPlugin)
 ```
 
-The stripped artifact can be found under `target/scala-${scalaBinaryVersion}/stripped/${reproducibleBuildsPackageName}-${version}.jar`.
+The stripped artifact can be found under `target/scala-${scalaBinaryVersion}/stripped/${reproducibleBuildsPackageName}-${version}.jar`. The generated [buildinfo](https://reproducible-builds.org/docs/jvm/) that will be published along with your release will look something like this:
+
+```
+name=simple
+group-id=net.bzzt
+artifact-id=simple_2.12
+version=0.1.0-SNAPSHOT
+java.version=1.8.0_191
+os.name=Linux
+build-tool=sbt
+sbt.version=1.2.3
+scala.version=2.12.7
+scala.binary-version=2.12
+date=1546548168000
+outputs.0.filename=simple_2.12-0.1.0-SNAPSHOT.pom
+outputs.0.length=783
+outputs.0.checksums.sha512=a24500ee9a44c55abb0b4461d4f405e4c2d988e43479a0385943226dd2487faf65a28e121b7f539b764df21ad27debed5bbf7fd07df34d413a81def2af589f1b
+outputs.1.filename=simple_2.12-0.1.0-SNAPSHOT.jar
+outputs.1.length=2933
+outputs.1.checksums.sha512=ea059170bba44d3ecdcdcc2feee91be9fe7aa33de36ab03e0934d2455b0aa6c57c20db5e1e51f88da97007a5aa8100761d71cae83a28a34ee61f755653bf612f
+```
 
 ### Interoperability with other sbt plugins
 

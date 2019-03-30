@@ -4,4 +4,4 @@ sys.props.get("plugin.version") match {
                          |Specify this property using the scriptedLaunchOpts -D.""".stripMargin)
 }
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.3.19")
+addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.3.20")

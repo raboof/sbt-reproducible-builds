@@ -122,18 +122,13 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     },
     reproducibleBuildsCheckMavenCentral := {
       val ourArtifacts = (packagedArtifacts in Compile).value
-      val ours = ourCertification.value
-      val groupId = organization.value
-      import scala.collection.JavaConverters._
-      val extraModuleAttributes = {
-        Map("scalaVersion" -> scalaBinaryVersion.value)
-      }.asJava
       val url = artifactUrl(MavenCentral,"buildinfo").value
 
       val log = streams.value.log
       log.info(s"Downloading certification from [$url]")
       val targetDirPath = crossTarget.value
-      val report: Future[String] = checkVerification(ours, uri(url))
+
+      val report: Future[String] = checkVerification(ourCertification.value, uri(url))
         .flatMap(result => {
           showResult(log, result)
           if (result.ok) Future.successful(result.asMarkdown)
@@ -141,7 +136,8 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
             result.verdicts
               .collect { case (filename: String, m: Mismatch) => {
                 val ext = filename.substring(filename.lastIndexOf('.'))
-               val mavenArtifactUrl = artifactUrl(MavenCentral, "").value + "ext"
+                val mavenArtifactUrl = artifactUrl(MavenCentral, "").value + "ext"
+
                 val ourArtifact = ourArtifacts.collect { case (art, file) if art.`type` == ext => file }.toList match {
                   case List() => throw new IllegalStateException(s"Did not find artifact for $ext")
                   case List(artifact) => artifact
@@ -149,6 +145,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
                 }
 
                 val artifactName = mavenArtifactUrl.substring(mavenArtifactUrl.lastIndexOf('/'))
+
                 http.run(GigahorseSupport.url(mavenArtifactUrl)).map { entity =>
                   val mavenArtifact = Files.createTempFile("/tmp", artifactName)
                   Files.write(
@@ -157,6 +154,13 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
                   )
                   val diffoscopeOutputDir = targetDirPath.toPath.resolve(s"reproducible-builds-diffoscope-output-$artifactName")
                   val cmd = s"diffoscope --html-dir $diffoscopeOutputDir $ourArtifact $mavenArtifact"
+                  new ProcessBuilder(
+                    "diffoscope",
+                    "--html-dir",
+                    diffoscopeOutputDir.toFile.getAbsolutePath.toString,
+                    ourArtifact.getAbsolutePath.toString,
+                    mavenArtifact.toFile.getAbsolutePath.toString
+                  ).start().waitFor()
                   log.info(s"Running '$cmd' for a detailed report on the differences")
                   s"See the [diffoscope report](reproducible-builds-diffoscope-output-$artifactName) for a detailed explanation " +
                     " of the differences between the freshly built artifact and the one published to Maven Central"

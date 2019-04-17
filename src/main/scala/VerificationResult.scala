@@ -9,10 +9,10 @@ case object Match extends Verdict {
   val description = "Match"
 }
 case object MissingInTheirs extends Verdict {
-  val description = "Missing in their checksums but present in ours"
+  val description = "Missing in theirs but present in ours"
 }
 case object MissingInOurs extends Verdict {
- val description = "Missing in our checksums but present in theirs"
+ val description = "Missing in ours but present in theirs"
 }
 case class Mismatch(our: Checksum, their: Checksum) extends Verdict {
   val description = s"Mismatch: our ${our.hexChecksum} did not match their ${their.hexChecksum}"
@@ -23,11 +23,13 @@ case class VerificationResult(
   ourSums: Map[String, Checksum],
   remoteSums: Map[String, Checksum],
  ) {
- def asMarkdown =
-  s"""# $uri: ${if (ok) "OK" else "NOT OK"}
+ def asMarkdown = {
+   val artifactName = uri.toASCIIString.substring(uri.toASCIIString.lastIndexOf('/') + 1)
+  s"""# `$artifactName`: ${if (ok) "OK" else "NOT OK"}
      |
-     |${verdicts.map { case (filename, verdict) => s"- $filename: ${verdict.description}" }}
+     |${verdicts.map { case (filename, verdict) => s"- $filename: ${verdict.description}" }.mkString("\n")}
    """.stripMargin
+   }
 
  /**
    * filename -> verdict

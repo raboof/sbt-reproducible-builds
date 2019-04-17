@@ -135,39 +135,44 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
           else Future.sequence({
             result.verdicts
               .collect { case (filename: String, m: Mismatch) => {
-                val ext = filename.substring(filename.lastIndexOf('.'))
-                val mavenArtifactUrl = artifactUrl(MavenCentral, "").value + "ext"
+                val ext = filename.substring(filename.lastIndexOf('.') + 1)
+                val mavenArtifactUrl = artifactUrl(MavenCentral, "").value + ext
+
+                val artifactName = mavenArtifactUrl.substring(mavenArtifactUrl.lastIndexOf('/') + 1)
 
                 val ourArtifact = ourArtifacts.collect { case (art, file) if art.`type` == ext => file }.toList match {
-                  case List() => throw new IllegalStateException(s"Did not find artifact for $ext")
+                  case List() => throw new IllegalStateException(s"Did not find local artifact for $artifactName ($ext)")
                   case List(artifact) => artifact
                   case multiple => throw new IllegalStateException(s"Found multiple artifacts for $ext")
                 }
 
-                val artifactName = mavenArtifactUrl.substring(mavenArtifactUrl.lastIndexOf('/'))
-
                 http.run(GigahorseSupport.url(mavenArtifactUrl)).map { entity =>
-                  val mavenArtifact = Files.createTempFile("/tmp", artifactName)
+                  val mavenCentralArtifactsPath = targetDirPath.toPath.resolve("mavenCentralArtifact")
+                  mavenCentralArtifactsPath.toFile.mkdirs()
+                  val mavenCentralArtifact = mavenCentralArtifactsPath.resolve(artifactName)
                   Files.write(
-                    Files.createTempFile("/tmp", mavenArtifactUrl.substring(mavenArtifactUrl.lastIndexOf('/'))),
+                    mavenCentralArtifact,
                     entity.bodyAsByteBuffer.array()
                   )
                   val diffoscopeOutputDir = targetDirPath.toPath.resolve(s"reproducible-builds-diffoscope-output-$artifactName")
-                  val cmd = s"diffoscope --html-dir $diffoscopeOutputDir $ourArtifact $mavenArtifact"
+                  val cmd = s"diffoscope --html-dir $diffoscopeOutputDir $ourArtifact $mavenCentralArtifact"
                   new ProcessBuilder(
                     "diffoscope",
                     "--html-dir",
-                    diffoscopeOutputDir.toFile.getAbsolutePath.toString,
-                    ourArtifact.getAbsolutePath.toString,
-                    mavenArtifact.toFile.getAbsolutePath.toString
+                    diffoscopeOutputDir.toFile.getAbsolutePath,
+                    ourArtifact.getAbsolutePath,
+                    mavenCentralArtifact.toFile.getAbsolutePath
                   ).start().waitFor()
                   log.info(s"Running '$cmd' for a detailed report on the differences")
-                  s"See the [diffoscope report](reproducible-builds-diffoscope-output-$artifactName) for a detailed explanation " +
+                  s"See the [diffoscope report](reproducible-builds-diffoscope-output-$artifactName/index.html) for a detailed explanation " +
                     " of the differences between the freshly built artifact and the one published to Maven Central"
+                }.recover {
+                  case s: StatusError if s.status == 404 =>
+                    s"Unfortunately no artifact was found at $mavenArtifactUrl to diff against."
                 }
               }
               }
-          }).map { verdicts => result.asMarkdown + "\n\n" + verdicts.mkString("\n\n") }
+          }).map { verdicts => result.asMarkdown + "\n\n" + verdicts.mkString("", "\n\n", "\n\n") }
         })
 
       val targetFilePath = targetDirPath.toPath.resolve("reproducible-builds-report.md")

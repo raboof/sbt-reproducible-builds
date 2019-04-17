@@ -2,23 +2,49 @@ package net.bzzt.reproduciblebuilds
 
 import java.net.URI
 
+sealed trait Verdict {
+  val description: String
+}
+case object Match extends Verdict {
+  val description = "Match"
+}
+case object MissingInTheirs extends Verdict {
+  val description = "Missing in theirs but present in ours"
+}
+case object MissingInOurs extends Verdict {
+ val description = "Missing in ours but present in theirs"
+}
+case class Mismatch(our: Checksum, their: Checksum) extends Verdict {
+  val description = s"Mismatch: our ${our.hexChecksum} did not match their ${their.hexChecksum}"
+}
+
 case class VerificationResult(
   uri: URI,
   ourSums: Map[String, Checksum],
   remoteSums: Map[String, Checksum],
  ) {
-  def verdicts: Seq[(String, String)] =
+ def asMarkdown = {
+   val artifactName = uri.toASCIIString.substring(uri.toASCIIString.lastIndexOf('/') + 1)
+  s"""# `$artifactName`: ${if (ok) "OK" else "NOT OK"}
+     |
+     |${verdicts.map { case (filename, verdict) => s"- $filename: ${verdict.description}" }.mkString("\n")}
+   """.stripMargin
+   }
+
+ /**
+   * filename -> verdict
+   */
+  def verdicts: Seq[(String, Verdict)] =
    ourSums.map {
     case (key, value) => (key, verdict(key, value))
    }.toSeq ++
-     ourSums.keySet.diff(remoteSums.keySet).map { missingInTheirs => (missingInTheirs, "Missing in their checksums but present in ours") } ++
-     remoteSums.keySet.diff(ourSums.keySet).map { missingInOurs => (missingInOurs, "Missing in our checksums but present in theirs") }
+     remoteSums.keySet.diff(ourSums.keySet).map { missingInOurs => (missingInOurs, MissingInOurs) }
 
-  def verdict(filename: String, ourSum: Checksum): String = remoteSums.get(filename) match {
-   case None => "Not found in remote attestation"
+  def verdict(filename: String, ourSum: Checksum): Verdict = remoteSums.get(filename) match {
+   case None => MissingInTheirs
    case Some(checksum) =>
-      if (checksum == ourSum) "Match"
-      else s"Mismatch: our ${ourSum.hexChecksum} did not match their ${checksum.hexChecksum}"
+      if (checksum == ourSum) Match
+      else Mismatch(ourSum, checksum)
   }
 
   def ok = ourSums == remoteSums

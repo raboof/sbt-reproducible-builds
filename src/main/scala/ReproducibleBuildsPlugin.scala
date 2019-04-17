@@ -5,7 +5,7 @@ import java.nio.charset.Charset
 import java.nio.file.Files
 
 import scala.concurrent.duration._
-import gigahorse.GigahorseSupport
+import gigahorse.{GigahorseSupport, StatusError}
 import sbt.{io => _, _}
 import sbt.Keys._
 import sbt.Classpaths._
@@ -40,11 +40,70 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
 
   val reproducibleBuildsCertification = taskKey[File]("Create a Reproducible Builds certification")
   val reproducibleBuildsCheckCertification = taskKey[Unit]("Download and compare Reproducible Builds certifications")
+  val reproducibleBuildsCheckMavenCentral = taskKey[File]("Compare Reproducible Build certifications against those published on Maven Central")
 
   val bzztNetResolver = Resolver.url("repo.bzzt.net", url("http://repo.bzzt.net:8000"))(Patterns().withArtifactPatterns(Vector(
     // We default to a Maven-style pattern with host and timestamp to reduce naming collisions, and branch if populated
     "[organisation]/[module](_[scalaVersion])(_[sbtVersion])/([branch]/)[revision]/[artifact]-[revision](-[classifier])(-[host])(-[timestamp]).[ext]"
   )))
+
+  lazy val ourCertification = Def.task[Certification] {
+    Certification(
+      organization.value,
+      reproducibleBuildsPackageName.value,
+      version.value,
+      scmInfo.value,
+      (packagedArtifacts in Compile).value,
+      (scalaVersion in artifactName).value,
+      (scalaBinaryVersion in artifactName).value,
+      sbtVersion.value
+    )
+  }
+
+  lazy val ourCertificationFile = Def.task[File] {
+    val certification = ourCertification.value
+
+    val targetDirPath = crossTarget.value
+    val targetFilePath = targetDirPath.toPath.resolve(targetFilename(certification.artifactId, certification.version, certification.classifier))
+
+    Files.write(targetFilePath, certification.asPropertyString.getBytes(Charset.forName("UTF-8")))
+
+    targetFilePath.toFile
+  }
+
+  sealed trait ArtifactUrlTarget
+  case object MavenCentral extends ArtifactUrlTarget
+  case object PublishToPrefix extends ArtifactUrlTarget
+
+  def artifactUrl(target: ArtifactUrlTarget, ext: String) = Def.task {
+    import scala.collection.JavaConverters._
+    val extraModuleAttributes = {
+      val scalaVer = Map("scalaVersion" -> scalaBinaryVersion.value)
+      if (sbtPlugin.value) scalaVer + ("sbtVersion" -> sbtBinaryVersion.value)
+      else scalaVer
+    }.asJava
+
+    val pattern: String = target match {
+      case MavenCentral =>
+        "http://repo1.maven.org/maven2/[organisation]/[module](_[scalaVersion])/[revision]/[artifact](_[scalaVersion])-[revision](-[classifier]).[ext]"
+      case PublishToPrefix =>
+        val pattern = (publishTo in ReproducibleBuilds).value.getOrElse(bzztNetResolver).asInstanceOf[URLRepository].patterns.artifactPatterns.head
+        pattern.substring(0, pattern.lastIndexOf("/") + 1)
+    }
+
+    IvyPatternHelper.substitute(
+      pattern,
+      organization.value.replace('.', '/'),
+      reproducibleBuildsPackageName.value,
+      version.value,
+      reproducibleBuildsPackageName.value,
+      ext,
+      ext,
+      "compile",
+      extraModuleAttributes,
+      null
+    )
+  }
 
   override lazy val projectSettings = Seq(
     publishCertification := true,
@@ -52,86 +111,80 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     resolvers += bzztNetResolver,
     packageBin in Compile := postProcessJar((packageBin in Compile).value),
     reproducibleBuildsPackageName := moduleName.value,
-    reproducibleBuildsCertification := {
-      val certification = Certification(
-        organization.value,
-        reproducibleBuildsPackageName.value,
-        version.value,
-        scmInfo.value,
-        (packagedArtifacts in Compile).value,
-        (scalaVersion in artifactName).value,
-        (scalaBinaryVersion in artifactName).value,
-        sbtVersion.value
-      )
-
-      val targetDirPath = crossTarget.value
-      val targetFilePath = targetDirPath.toPath.resolve(targetFilename(certification.artifactId, certification.version, certification.classifier))
-
-      Files.write(targetFilePath, certification.asPropertyString.getBytes(Charset.forName("UTF-8")))
-
-      targetFilePath.toFile
-    },
+    reproducibleBuildsCertification := ourCertificationFile.value,
     artifact in ReproducibleBuilds := Artifact(reproducibleBuildsPackageName.value, "buildinfo", "buildinfo"),
     packagedArtifacts ++= {
       val generatedArtifact = Map(
-        (artifact in ReproducibleBuilds).value ->
-        {
-          val certification = Certification(
-            organization.value,
-            reproducibleBuildsPackageName.value,
-            version.value,
-            scmInfo.value,
-            (packagedArtifacts in Compile).value,
-            (scalaVersion in artifactName).value,
-            (scalaBinaryVersion in artifactName).value,
-            sbtVersion.value
-          )
-
-          val targetDirPath = crossTarget.value
-          val targetFilePath = targetDirPath.toPath.resolve(targetFilename(certification.artifactId, certification.version, certification.classifier))
-
-          Files.write(targetFilePath, certification.asPropertyString.getBytes(Charset.forName("UTF-8")))
-
-          targetFilePath.toFile
-        }
+        (artifact in ReproducibleBuilds).value -> ourCertificationFile.value
       )
 
       if (publishCertification.value) generatedArtifact else Map.empty[Artifact, File]
     },
-    reproducibleBuildsCheckCertification := {
-      val ours = Certification(
-        organization.value,
-        reproducibleBuildsPackageName.value,
-        version.value,
-        scmInfo.value,
-        (packagedArtifacts in Compile).value,
-        (scalaVersion in artifactName).value,
-        (scalaBinaryVersion in artifactName).value,
-        sbtVersion.value
-      )
-      val groupId = organization.value
-      // TODO also check against the 'official' published buildinfo
-      val pattern = (publishTo in ReproducibleBuilds).value.getOrElse(bzztNetResolver).asInstanceOf[URLRepository].patterns.artifactPatterns.head
-      val prefixPattern = pattern.substring(0, pattern.lastIndexOf("/") + 1)
-      import scala.collection.JavaConverters._
-      val extraModuleAttributes = {
-        val scalaVer = Map("scalaVersion" -> scalaBinaryVersion.value)
-        if (sbtPlugin.value) scalaVer + ("sbtVersion" -> sbtBinaryVersion.value)
-        else scalaVer
-      }.asJava
+    reproducibleBuildsCheckMavenCentral := {
+      val ourArtifacts = (packagedArtifacts in Compile).value
+      val url = artifactUrl(MavenCentral,"buildinfo").value
 
-      val prefix = IvyPatternHelper.substitute(
-        prefixPattern,
-        organization.value.replace('.', '/'),
-        reproducibleBuildsPackageName.value,
-        version.value,
-        reproducibleBuildsPackageName.value,
-        "buildinfo",
-        "buildinfo",
-        "compile",
-        extraModuleAttributes,
-        null
-      )
+      val log = streams.value.log
+      log.info(s"Downloading certification from [$url]")
+      val targetDirPath = crossTarget.value
+
+      val report: Future[String] = checkVerification(ourCertification.value, uri(url))
+        .flatMap(result => {
+          showResult(log, result)
+          if (result.ok) Future.successful(result.asMarkdown)
+          else Future.sequence({
+            result.verdicts
+              .collect { case (filename: String, m: Mismatch) => {
+                val ext = filename.substring(filename.lastIndexOf('.') + 1)
+                val mavenArtifactUrl = artifactUrl(MavenCentral, "").value + ext
+
+                val artifactName = mavenArtifactUrl.substring(mavenArtifactUrl.lastIndexOf('/') + 1)
+
+                val ourArtifact = ourArtifacts.collect { case (art, file) if art.`type` == ext => file }.toList match {
+                  case List() => throw new IllegalStateException(s"Did not find local artifact for $artifactName ($ext)")
+                  case List(artifact) => artifact
+                  case multiple => throw new IllegalStateException(s"Found multiple artifacts for $ext")
+                }
+
+                http.run(GigahorseSupport.url(mavenArtifactUrl)).map { entity =>
+                  val mavenCentralArtifactsPath = targetDirPath.toPath.resolve("mavenCentralArtifact")
+                  mavenCentralArtifactsPath.toFile.mkdirs()
+                  val mavenCentralArtifact = mavenCentralArtifactsPath.resolve(artifactName)
+                  Files.write(
+                    mavenCentralArtifact,
+                    entity.bodyAsByteBuffer.array()
+                  )
+                  val diffoscopeOutputDir = targetDirPath.toPath.resolve(s"reproducible-builds-diffoscope-output-$artifactName")
+                  val cmd = s"diffoscope --html-dir $diffoscopeOutputDir $ourArtifact $mavenCentralArtifact"
+                  new ProcessBuilder(
+                    "diffoscope",
+                    "--html-dir",
+                    diffoscopeOutputDir.toFile.getAbsolutePath,
+                    ourArtifact.getAbsolutePath,
+                    mavenCentralArtifact.toFile.getAbsolutePath
+                  ).start().waitFor()
+                  log.info(s"Running '$cmd' for a detailed report on the differences")
+                  s"See the [diffoscope report](reproducible-builds-diffoscope-output-$artifactName/index.html) for a detailed explanation " +
+                    " of the differences between the freshly built artifact and the one published to Maven Central"
+                }.recover {
+                  case s: StatusError if s.status == 404 =>
+                    s"Unfortunately no artifact was found at $mavenArtifactUrl to diff against."
+                }
+              }
+              }
+          }).map { verdicts => result.asMarkdown + "\n\n" + verdicts.mkString("", "\n\n", "\n\n") }
+        })
+
+      val targetFilePath = targetDirPath.toPath.resolve("reproducible-builds-report.md")
+
+      Files.write(targetFilePath, Await.result(report, 30.seconds).getBytes(Charset.forName("UTF-8")))
+
+      targetFilePath.toFile
+    },
+    reproducibleBuildsCheckCertification := {
+      val ours = ourCertification.value
+      val groupId = organization.value
+      val prefix = artifactUrl(PublishToPrefix, "buildinfo").value
       val log = streams.value.log
       log.info(s"Discovering certifications at [$prefix]")
       // TODO add Accept header to request JSON-formatted
@@ -147,13 +200,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
           Future.sequence(results)
       }.map { resultList =>
         log.info(s"Processed ${resultList.size} results. ${resultList.count(_.ok)} matching attestations, ${resultList.filterNot(_.ok).size} mismatches");
-        resultList.foreach { result =>
-          log.info(s"${result.uri}:")
-          log.info("- " + (if (result.ok) "OK" else "NOT OK"))
-          result.verdicts.foreach {
-            case (filename, verdict) => log.info(s"- $filename: $verdict")
-          }
-        }
+        resultList.foreach { result => showResult(log, result) }
       }
       Await.result(done, 30.seconds)
     },
@@ -218,6 +265,9 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     publishM2 := publishTask(publishM2Configuration).value
   ))
 
+  private def showResult(log: Logger, result: VerificationResult): Unit =
+    log.info(result.asMarkdown)
+
   private def gpgPluginSettings =
     if (gpgPluginOnClasspath) GpgHelpers.settings
     else Seq.empty
@@ -242,6 +292,8 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       http.run(GigahorseSupport.url(uri.toASCIIString)).map { entity =>
         val theirs = Certification(entity.bodyAsString)
         VerificationResult(uri, ourSums, theirs.checksums)
+      }.recover {
+        case e: StatusError if e.status == 404 => VerificationResult(uri, ourSums, Seq.empty)
       }
     }
 

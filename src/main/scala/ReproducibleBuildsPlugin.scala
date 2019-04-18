@@ -201,6 +201,9 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       }.map { resultList =>
         log.info(s"Processed ${resultList.size} results. ${resultList.count(_.ok)} matching attestations, ${resultList.filterNot(_.ok).size} mismatches");
         resultList.foreach { result => showResult(log, result) }
+      }.recover {
+        case e: StatusError if e.status == 404 =>
+          showResult(log, VerificationResult(uri(prefix), ours.checksums, Seq.empty))
       }
       Await.result(done, 30.seconds)
     },

@@ -28,7 +28,8 @@ case class VerificationResult(
   s"""# `$artifactName`: ${if (ok) "OK" else "NOT OK"}
      |
      |${verdicts.map { case (filename, verdict) => s"- $filename: ${verdict.description}" }.mkString("\n")}
-   """.stripMargin
+     |
+     |""".stripMargin
    }
 
  /**

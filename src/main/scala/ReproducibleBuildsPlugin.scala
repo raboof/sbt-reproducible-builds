@@ -108,7 +108,6 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
   override lazy val projectSettings = Seq(
     publishCertification := true,
     hostname := InetAddress.getLocalHost.getHostName,
-    resolvers += bzztNetResolver,
     packageBin in Compile := postProcessJar((packageBin in Compile).value),
     reproducibleBuildsPackageName := moduleName.value,
     reproducibleBuildsCertification := ourCertificationFile.value,

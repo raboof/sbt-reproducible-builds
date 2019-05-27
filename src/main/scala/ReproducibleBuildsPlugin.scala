@@ -54,6 +54,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       version.value,
       scmInfo.value,
       (packagedArtifacts in Compile).value,
+      (libraryDependencies in Compile).value,
       (scalaVersion in artifactName).value,
       (scalaBinaryVersion in artifactName).value,
       sbtVersion.value

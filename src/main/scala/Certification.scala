@@ -5,11 +5,12 @@ import java.math.BigInteger
 import java.nio.file.Files
 import java.security.MessageDigest
 
-import sbt.{Artifact, File}
+import sbt.{Artifact, File, ModuleID}
 import sbt.io.syntax.File
 import sbt.librarymanagement.ScmInfo
 
 import scala.collection.mutable
+import scala.collection.immutable
 
 case class Checksum(filename: String, length: Int, checksum: List[Byte]) {
   def hexChecksum = checksum.map("%02x" format _).mkString
@@ -29,10 +30,11 @@ case class Certification(
                           version: String,
                           scmUri: Option[String],
                           classifier: Option[String],
+                          scalacPlugins: immutable.Seq[String],
                           scalaVersion: String,
                           scalaBinaryVersion: String,
                           sbtVersion: String,
-                          checksums: List[Checksum],
+                          checksums: immutable.Seq[Checksum],
                           date: Long,
                         ) {
   require(
@@ -56,7 +58,9 @@ case class Certification(
       "scala.version" -> scalaVersion,
       "scala.binary-version" -> scalaBinaryVersion,
       "date" -> date,
-    ) ++ checksums.zipWithIndex.flatMap {
+    ) ++ scalacPlugins.zipWithIndex.map {
+      case (plugin, idx) => s"scala.compiler.plugins.$idx" -> plugin
+    } ++ checksums.zipWithIndex.flatMap {
       case (checksum @ Checksum(filename, length, _), idx) =>
         Seq(
           s"outputs.$idx.filename" -> filename,
@@ -79,6 +83,7 @@ object Certification {
     packageVersion: String,
     scmInfo: Option[ScmInfo],
     packagedArtifacts: Map[Artifact, File],
+    libraryDependencies: Seq[ModuleID],
     scalaVersion: String,
     scalaBinaryVersion: String,
     sbtVersion: String,
@@ -93,6 +98,11 @@ object Certification {
       .map { case (_, packagedFile) => Checksum(packagedFile) }
       .toList
 
+    val scalacPlugins = libraryDependencies
+      .filter(_.configurations.contains("plugin->default(compile)"))
+      .map(mid => mid.organization + ":" + mid.name)
+      .toIndexedSeq
+
     Certification(
       packageName,
       organization,
@@ -100,6 +110,7 @@ object Certification {
       packageVersion,
       scmInfo.map(info => info.devConnection.getOrElse(info.connection)),
       classifier,
+      scalacPlugins,
       scalaVersion,
       scalaBinaryVersion,
       sbtVersion,
@@ -129,6 +140,16 @@ object Certification {
           Checksum(filename, length, bs)
       }
 
+    val ScalacPluginLine = "scala\\.compiler\\.plugins\\.(\\d+)".r
+    val scalacPlugins = properties
+      .stringPropertyNames()
+      .asScala
+      .filter(_.startsWith("scala.compiler.plugins"))
+      .toList
+      .map { case ScalacPluginLine(idx) => idx }
+      .sorted
+      .map { case idx => properties.getProperty("scala.compiler.plugins." + idx) }
+
     new Certification(
       properties.getProperty("name"),
       properties.getProperty("group-id"),
@@ -136,6 +157,7 @@ object Certification {
       properties.getProperty("version"),
       Option(properties.getProperty("source.scm.uri")),
       Option(properties.getProperty("classifier")),
+      scalacPlugins,
       properties.getProperty("scala.version"),
       properties.getProperty("scala.binary-version"),
       properties.getProperty("sbt.version"),

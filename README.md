@@ -28,7 +28,7 @@ And to `build.sbt`:
 enablePlugins(ReproducibleBuildsPlugin)
 ```
 
-The stripped artifact can be found under `target/scala-${scalaBinaryVersion}/stripped/${reproducibleBuildsPackageName}-${version}.jar`. The generated [buildinfo](https://reproducible-builds.org/docs/jvm/) that will be published along with your release will look something like this:
+After `sbt package`, the stripped artifact can be found under `target/scala-${scalaBinaryVersion}/stripped/${reproducibleBuildsPackageName}-${version}.jar`. The generated [buildinfo](https://reproducible-builds.org/docs/jvm/) that will be published along with your release will look something like this:
 
 ```
 name=simple

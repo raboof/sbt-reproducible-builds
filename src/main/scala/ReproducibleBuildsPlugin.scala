@@ -42,7 +42,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
   val reproducibleBuildsCheckCertification = taskKey[Unit]("Download and compare Reproducible Builds certifications")
   val reproducibleBuildsCheckMavenCentral = taskKey[File]("Compare Reproducible Build certifications against those published on Maven Central")
 
-  val bzztNetResolver = Resolver.url("repo.bzzt.net", url("http://repo.bzzt.net:8000"))(Patterns().withArtifactPatterns(Vector(
+  val bzztNetResolver = Resolver.url("repo.bzzt.net", url("https://repo.bzzt.net"))(Patterns().withArtifactPatterns(Vector(
     // We default to a Maven-style pattern with host and timestamp to reduce naming collisions, and branch if populated
     "[organisation]/[module](_[scalaVersion])(_[sbtVersion])/([branch]/)[revision]/[artifact]-[revision](-[classifier])(-[host])(-[timestamp]).[ext]"
   )))

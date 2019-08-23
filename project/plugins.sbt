@@ -2,7 +2,7 @@ addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.5")
 
 addSbtPlugin("com.dwijnand" % "sbt-dynver" % "4.0.0")
 
-addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.21")
+addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.22")
 
 addSbtPlugin("io.crashbox" % "sbt-gpg" % "0.2.0")
 

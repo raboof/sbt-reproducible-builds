@@ -8,4 +8,4 @@ sys.props.get("plugin.version") match {
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.5.0")
 
 // to easily test sbt-gpg integration manually
-addSbtPlugin("io.crashbox" % "sbt-gpg" % "0.2.0")
+addSbtPlugin("io.crashbox" % "sbt-gpg" % "0.2.1")

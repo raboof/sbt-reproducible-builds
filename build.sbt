@@ -23,7 +23,7 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % "test"
 
 // Optional integration:
 addSbtPlugin("com.typesafe.sbt" %% "sbt-native-packager" % "1.5.0" % Provided)
-addSbtPlugin("io.crashbox" %% "sbt-gpg" % "0.2.0" % Provided)
+addSbtPlugin("io.crashbox" %% "sbt-gpg" % "0.2.1" % Provided)
 // addSbtPlugin("com.jsuereth" % "sbt-pgp" % sbtPgpVersion % Provided)
 
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))

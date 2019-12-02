@@ -5,8 +5,10 @@ import java.math.BigInteger
 import org.scalatest._
 
 import scala.collection.mutable
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class CertificationSpec extends WordSpec with Matchers {
+class CertificationSpec extends AnyWordSpec with Matchers {
   "The certification model" should {
     "Roundtrip through Properties format" in {
       val cert = Certification(

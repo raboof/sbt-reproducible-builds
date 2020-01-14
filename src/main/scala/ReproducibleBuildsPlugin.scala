@@ -281,11 +281,13 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
 
   def postProcessZip(zip: File): File = postProcessWith(zip, new ZipStripper())
 
-  private def postProcessWith(file: File, stripper: Stripper): File = {
-    val dir = file.getParentFile.toPath.resolve("stripped")
+  private def postProcessWith(in: File, stripper: Stripper): File = {
+    val dir = in.getParentFile.toPath.resolve("stripped")
     dir.toFile.mkdir()
-    val out = dir.resolve(file.getName).toFile
-    stripper.strip(file, out)
+    val out = dir.resolve(in.getName).toFile
+    stripper.strip(in, out)
+    // Allowed since stripping is idempotent. This way sbt can cache the result better.
+    out.setLastModified(in.lastModified);
     out
   }
 

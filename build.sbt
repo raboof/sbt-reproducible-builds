@@ -22,7 +22,7 @@ libraryDependencies += "io.spray" %%  "spray-json" % "1.3.5"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.1.0" % "test"
 
 // Optional integration:
-addSbtPlugin("com.typesafe.sbt" %% "sbt-native-packager" % "1.6.0" % Provided)
+addSbtPlugin("com.typesafe.sbt" %% "sbt-native-packager" % "1.6.1" % Provided)
 addSbtPlugin("io.crashbox" %% "sbt-gpg" % "0.2.1" % Provided)
 // addSbtPlugin("com.jsuereth" % "sbt-pgp" % sbtPgpVersion % Provided)
 

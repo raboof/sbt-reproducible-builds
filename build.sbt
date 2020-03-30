@@ -26,7 +26,7 @@ addSbtPlugin("com.typesafe.sbt" %% "sbt-native-packager" % "1.6.2" % Provided)
 addSbtPlugin("io.crashbox" %% "sbt-gpg" % "0.2.1" % Provided)
 // addSbtPlugin("com.jsuereth" % "sbt-pgp" % sbtPgpVersion % Provided)
 
-licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
+licenses += ("MIT", url("https://opensource.org/licenses/MIT"))
 
 scriptedLaunchOpts := { scriptedLaunchOpts.value ++
   Seq("-Xmx1024M", "-Dplugin.version=" + version.value)

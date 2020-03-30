@@ -9,7 +9,7 @@ This plugin provides a number of features:
  * Strip 'accidental' sources of nondeterminism (e.g. timestamps) from the packaged jar
  * Produce a ['buildinfo'](https://reproducible-builds.org/docs/recording/) file describing the build environment used and containing a cryptographic hash of the resulting artifacts.
  * Upload this (signed) certification when publishing
- * Upload this (signed) certification to a [reproducible-builds-certification-repository](http://github.com/raboof/reproducible-builds-certification-repository) instance
+ * Upload this (signed) certification to a [reproducible-builds-certification-repository](https://github.com/raboof/reproducible-builds-certification-repository) instance
  * Check your local build against already-uploaded certifications (WiP)
 
 ## Usage
@@ -71,7 +71,7 @@ and either simply `publishLocal`, or, for example if you have `publishCertificat
 
 If you are a (3rd-party or 'official') rebuilder, you can use the
 `reproducible-builds:publish` task to publish the buildinfo to a
-[reproducible-builds-certification-repository](http://github.com/raboof/reproducible-builds-certification-repository) instance.
+[reproducible-builds-certification-repository](https://github.com/raboof/reproducible-builds-certification-repository) instance.
 
 #### Uploading certifications from Travis
 

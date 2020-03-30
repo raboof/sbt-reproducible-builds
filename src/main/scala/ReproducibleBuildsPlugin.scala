@@ -86,7 +86,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
 
     val pattern: String = target match {
       case MavenCentral =>
-        "http://repo1.maven.org/maven2/[organisation]/[module](_[scalaVersion])/[revision]/[artifact](_[scalaVersion])-[revision](-[classifier]).[ext]"
+        "https://repo1.maven.org/maven2/[organisation]/[module](_[scalaVersion])/[revision]/[artifact](_[scalaVersion])-[revision](-[classifier]).[ext]"
       case PublishToPrefix =>
         val pattern = (publishTo in ReproducibleBuilds).value.getOrElse(bzztNetResolver).asInstanceOf[URLRepository].patterns.artifactPatterns.head
         pattern.substring(0, pattern.lastIndexOf("/") + 1)

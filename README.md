@@ -19,7 +19,7 @@ This plugin provides a number of features:
 Then add to your `project/plugins.sbt`:
 
 ```
-addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.22")
+addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.24")
 ```
 
 And to `build.sbt`:

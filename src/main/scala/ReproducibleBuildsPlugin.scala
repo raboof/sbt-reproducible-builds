@@ -30,8 +30,6 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
   val gpgPluginOnClasspath =
     Try(getClass.getClassLoader.loadClass("io.crashbox.gpg.SbtGpg")).isSuccess
 
-  val assemblyPluginOnClasspath =
-    Try(getClass.getClassLoader.loadClass("sbtassembly.AssemblyPlugin")).isSuccess
 
   override def requires: Plugins = JvmPlugin
 
@@ -213,9 +211,6 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     ivyConfigurations += ReproducibleBuilds,
   ) ++ (
     if (universalPluginOnClasspath) SbtNativePackagerHelpers.settings
-    else Seq.empty
-  ) ++ (
-    if (assemblyPluginOnClasspath) AssemblyHelpers.settings
     else Seq.empty
   ) ++ inConfig(ReproducibleBuilds)(Seq(
     packagedArtifacts := {

@@ -1,3 +1,4 @@
 > assembly
+$ exists target/scala-2.12/assembly-assembly-0.1.0-SNAPSHOT.jar
 $ exists target/scala-2.12/stripped/assembly-assembly-0.1.0-SNAPSHOT.jar
 $ must-mirror target/scala-2.12/stripped/assembly-assembly-0.1.0-SNAPSHOT.jar expected/assembly-assembly-0.1.0-SNAPSHOT.jar

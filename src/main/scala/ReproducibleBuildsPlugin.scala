@@ -30,6 +30,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
   val gpgPluginOnClasspath =
     Try(getClass.getClassLoader.loadClass("io.crashbox.gpg.SbtGpg")).isSuccess
 
+
   override def requires: Plugins = JvmPlugin
 
   val ReproducibleBuilds = config("reproducible-builds")

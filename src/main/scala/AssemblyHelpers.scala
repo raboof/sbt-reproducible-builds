@@ -10,7 +10,18 @@ object AssemblyHelpers {
 
   val settings: Seq[Setting[_]] =
     Seq(
-      assembly := ReproducibleBuildsPlugin.postProcessJar(assembly.value)
-    )
+      assembly := {
+        val log = streams.value.log
+        val jar = assembly.value
+        val options = (assemblyOption in assembly).value
 
+        if (options.prependShellScript.isDefined) {
+          log.warn("Cannot make assembly reproducible when prependShellScript is set")
+          jar
+        }
+        else {
+          ReproducibleBuildsPlugin.postProcessJar(jar)
+        }
+      }
+    )
 }

@@ -1,5 +1,8 @@
 scalaVersion := "2.12.7"
 
+name := "osgi"
+organization := "default"
+
 enablePlugins(ReproducibleBuildsPlugin)
 enablePlugins(SbtOsgi)
 

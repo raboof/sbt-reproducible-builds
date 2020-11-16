@@ -1,5 +1,8 @@
 scalaVersion := "2.12.7"
 
+name := "native-packager"
+organization := "default"
+
 enablePlugins(ReproducibleBuildsPlugin)
 enablePlugins(JavaAppPackaging)
 

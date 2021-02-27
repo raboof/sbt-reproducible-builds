@@ -2,7 +2,7 @@ sbtPlugin := true
 
 organization := "net.bzzt"
 
-scalaVersion := "2.12.13"
+scalaVersion := "2.13.5"
 
 /**
  * Don't build for 0.13, since that does not include

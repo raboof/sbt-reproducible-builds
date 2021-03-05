@@ -2,13 +2,12 @@ sbtPlugin := true
 
 organization := "net.bzzt"
 
-scalaVersion := "2.13.5"
+scalaVersion := "2.12.12"
 
 /**
- * Don't build for 0.13, since that does not include
- * gigahorse to perform uploads.
+ * should work with later sbt versions as well (tested at least with 1.4.x)
  */
-crossSbtVersions := Vector(/*"0.13.16",*/ "1.2.7")
+sbtVersion := "1.2.7"
 
 val sbtPgpVersion = "1.1.2"
 

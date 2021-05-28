@@ -2,7 +2,7 @@ sbtPlugin := true
 
 organization := "net.bzzt"
 
-scalaVersion := "2.12.12"
+scalaVersion := "2.12.14"
 
 /**
  * should work with later sbt versions as well (tested at least with 1.4.x)

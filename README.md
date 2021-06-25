@@ -65,12 +65,12 @@ you can set `publishCertification := false`.
 
 To sign the certification, configure [sbt-gpg](https://github.com/jodersky/sbt-gpg)
 and either simply `publishLocal`, or, for example if you have `publishCertification := false`,
-`reproducible-builds:publishLocal`.
+`ReproducibleBuilds/publishLocal`.
 
 ### Sharing certifications
 
 If you are a (3rd-party or 'official') rebuilder, you can use the
-`reproducible-builds:publish` task to publish the buildinfo to a
+`ReproducibleBuilds/publish` task to publish the buildinfo to a
 [reproducible-builds-certification-repository](https://github.com/raboof/reproducible-builds-certification-repository) instance.
 
 #### Uploading certifications from Travis
@@ -90,7 +90,7 @@ key with `gpg --export -a "Arnout Engelen (via Travis)" > public.key` and
 Now encrypt the private key so only Travis can read it with
 `travis encrypt-file .travis/private.key` and follow the instructions to
 unencrypt. Finally, `gpg --import private.key public.key` and
-`sbt reproducible-builds:publish` to sign and upload the
+`sbt ReproducibleBuilds/publish` to sign and upload the
 certification from Travis.
 
 ### Checking certifications

@@ -33,7 +33,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
 
   override def requires: Plugins = JvmPlugin
 
-  val ReproducibleBuilds = config("reproducible-builds")
+  val ReproducibleBuilds = config("reproducibleBuilds")
 
   val reproducibleBuildsPackageName = settingKey[String]("Module name of this build")
   val publishCertification = settingKey[Boolean]("Include the certification when publishing")

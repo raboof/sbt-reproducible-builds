@@ -1,6 +1,16 @@
 sbtPlugin := true
 
 organization := "net.bzzt"
+homepage := Some(url("https://github.com/raboof/sbt-reproducible-builds"))
+licenses := List(("MIT", url("https://opensource.org/licenses/MIT")))
+developers := List(
+  Developer(
+    "raboof",
+    "Arnout Engelen",
+    "arnout@bzzt.net",
+    url("https://arnout.engelen.eu")
+  )
+)
 
 scalaVersion := "2.12.14"
 
@@ -25,8 +35,6 @@ addSbtPlugin("com.typesafe.sbt" %% "sbt-native-packager" % "1.8.1" % Provided)
 addSbtPlugin("io.crashbox" %% "sbt-gpg" % "0.2.1" % Provided)
 addSbtPlugin("com.eed3si9n" %% "sbt-assembly" % "0.14.10" % Provided)
 // addSbtPlugin("com.jsuereth" % "sbt-pgp" % sbtPgpVersion % Provided)
-
-licenses += ("MIT", url("https://opensource.org/licenses/MIT"))
 
 scriptedLaunchOpts := { scriptedLaunchOpts.value ++
   Seq("-Xmx1024M", "-Dplugin.version=" + version.value)

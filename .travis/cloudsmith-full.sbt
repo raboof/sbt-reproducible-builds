@@ -10,8 +10,9 @@ import net.bzzt.reproduciblebuilds.ReproducibleBuildsPlugin.ReproducibleBuilds
 val repo = "Cloudsmith API" at "https://maven.cloudsmith.io/raboof/sbt-reproducible-builds/"
 
 resolvers += repo
-ReproducibleBuilds / publishTo := Some(repo)
-ReproducibleBuilds / pomIncludeRepository := { x => false }
+
+publishTo := Some(repo)
+pomIncludeRepository := { x => false }
 
 credentials += Credentials(
   realm = "Cloudsmith API",

@@ -20,7 +20,7 @@ deploy:
   provider: script
   skip_cleanup: true
   script:
-    - cp .travis/cloudsmith.sbt . && sbt ReproducibleBuilds/publish
+    - cp .travis/cloudsmith-buildinfo.sbt cloudsmith.sbt && sbt ReproducibleBuilds/publish && cp .travis/cloudsmith-full.sbt cloudsmith.sbt && sbt publish
   on:
     tags: true
     repo: raboof/sbt-reproducible-builds

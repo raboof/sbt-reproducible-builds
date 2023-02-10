@@ -5,7 +5,7 @@ sys.props.get("plugin.version") match {
 }
 
 // Included but not used, to catch problems with that combination:
-addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.9.11")
+addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.9.14")
 
 // to easily test sbt-gpg integration manually
 addSbtPlugin("io.crashbox" % "sbt-gpg" % "0.2.1")

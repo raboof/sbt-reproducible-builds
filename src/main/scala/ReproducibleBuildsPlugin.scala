@@ -87,7 +87,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
 
     val pattern: String = target match {
       case MavenCentral =>
-        "https://repo1.maven.org/maven2/[organisation]/[module](_[scalaVersion])/[revision]/[artifact](_[scalaVersion])-[revision](-[classifier]).[ext]"
+        "https://repository.apache.org/content/groups/staging/[organization]/[module](_[scalaVersion])/[revision]/[artifact](_[scalaVersion])-[revision](-[classifier]).[ext]"
       case PublishToPrefix =>
         val pattern = (publishTo in ReproducibleBuilds).value.getOrElse(bzztNetResolver).asInstanceOf[URLRepository].patterns.artifactPatterns.head
         pattern.substring(0, pattern.lastIndexOf("/") + 1)
@@ -129,11 +129,10 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       log.info(s"Downloading certification from [$url]")
       val targetDirPath = crossTarget.value
 
-      val report: Future[String] = checkVerification(ourCertification.value, uri(url))
+      val report: Future[String] = checkArtifactChecksums(ourCertification.value, uri(url), artifactUrl(MavenCentral, "").value)
         .flatMap(result => {
           showResult(log, result)
-          if (result.ok) Future.successful(result.asMarkdown)
-          else Future.sequence({
+          Future.sequence({
             result.verdicts
               .collect { case (filename: String, m: Mismatch) => {
                 val ext = filename.substring(filename.lastIndexOf('.') + 1)
@@ -292,6 +291,27 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     out
   }
 
+  private def checkArtifactChecksums(ours: Certification, uri: URI, mavenArtifactPrefix: String): Future[VerificationResult] = {
+    val theirSums: Seq[Future[Option[Checksum]]] = ours.checksums.map { ourSum =>
+      val filename = ourSum.filename
+      val ext = filename.substring(filename.lastIndexOf('.') + 1)
+      val mavenArtifactUrl = mavenArtifactPrefix + ext
+      println(mavenArtifactUrl)
+      http.run(GigahorseSupport.url(mavenArtifactUrl)).map { entity =>
+        import java.security.MessageDigest
+        val buffer = entity.bodyAsByteBuffer
+        val bytes = new Array[Byte](buffer.remaining())
+        buffer.get(bytes)
+        val digest = MessageDigest.getInstance("SHA-512")
+        Some(new Checksum(filename, bytes.length, digest.digest(bytes).toList))
+      }.recover {
+        case s: StatusError if s.status == 404 => 
+          None
+      }
+    }
+    Future.sequence(theirSums).map(s => VerificationResult(uri, ours.checksums, s.flatten))
+  }
+    
   private def checkVerification(ours: Certification, uri: URI): Future[VerificationResult] = {
       val ourSums = ours.checksums
 

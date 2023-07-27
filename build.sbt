@@ -1,8 +1,9 @@
 sbtPlugin := true
 
 organization := "net.bzzt"
+startYear := Some(2017)
 homepage := Some(url("https://github.com/raboof/sbt-reproducible-builds"))
-licenses := List(("MIT", url("https://opensource.org/licenses/MIT")))
+licenses := List(("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.txt")))
 developers := List(
   Developer(
     "raboof",

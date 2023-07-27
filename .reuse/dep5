@@ -1,0 +1,10 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: sbt-reproducible-builds
+Upstream-Contact: Arnout Engelen <arnout@bzzt.net>
+Source: https://github.com/raboof/sbt-reproducible-builds
+
+# Sample paragraph, commented out:
+#
+# Files: src/*
+# Copyright: $YEAR $NAME <$CONTACT>
+# License: ...

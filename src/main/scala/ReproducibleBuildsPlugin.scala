@@ -296,7 +296,6 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       val filename = ourSum.filename
       val ext = filename.substring(filename.lastIndexOf('.') + 1)
       val mavenArtifactUrl = mavenArtifactPrefix + ext
-      println(mavenArtifactUrl)
       http.run(GigahorseSupport.url(mavenArtifactUrl)).map { entity =>
         import java.security.MessageDigest
         val buffer = entity.bodyAsByteBuffer

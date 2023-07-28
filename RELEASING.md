@@ -1,7 +1,5 @@
 For now releasing is a matter of:
 * update version in README.md
-* wait for travis builds to complete
-* tag
-
-Tagging should trigger the release from GH actions, and an independent
-build and publish of just the buildinfo metadata from Travis.
+* wait for GitHub Actions builds to complete
+* draft the new release via https://github.com/raboof/sbt-reproducible-builds/releases/new using a `v0.x` tag
+* Monitor the GitHub Actions release build

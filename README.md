@@ -109,6 +109,18 @@ Checking your certification with the 'official' published
 certification is currently
 [not yet implemented](https://github.com/raboof/sbt-reproducible-builds/issues/69).
 
+### Checking published artifacts
+
+You can check your local artifacts against published ones with
+`sbt clean reproducibleBuildsCheck`. If you want to check
+against a different repository (such as a staging repository),
+you can set the `reproducibleBuildsCheckResolver`:
+
+```
+import net.bzzt.reproduciblebuilds.ReproducibleBuildsPlugin._
+ThisBuild / reproducibleBuildsCheckResolver := "repository-apache-org-staging" at "https://repository.apache.org/content/groups/staging"
+```
+
 ## Drinking our own champagne
 
 From version 0.3 onwards, `sbt-reproducible-builds` should itself be

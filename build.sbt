@@ -1,3 +1,5 @@
+import sbt.Keys.{semanticdbEnabled, semanticdbVersion}
+
 sbtPlugin := true
 
 organization := "net.bzzt"
@@ -41,3 +43,14 @@ scriptedLaunchOpts := {
     Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
 }
 scriptedBufferLog := false
+
+// scalafix specific settings
+inThisBuild(
+  List(
+    semanticdbEnabled := true,
+    semanticdbVersion := scalafixSemanticdb.revision,
+    scalacOptions ++= Seq(
+      "-Ywarn-unused"
+    )
+  )
+)

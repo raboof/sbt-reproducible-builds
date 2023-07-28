@@ -12,6 +12,12 @@ This plugin provides a number of features:
  * Upload this (signed) certification to a [reproducible-builds-certification-repository](https://github.com/raboof/reproducible-builds-certification-repository) instance
  * Check your local build against already-uploaded certifications (WiP)
 
+## Project status
+
+This is a pre-1.0 version: you are welcome to use it, but there are no
+guarantees, and syntax, behaviour and default configuration may still change
+in future versions.
+
 ## Usage
 
 ### Stripping nondeterminism from artifacts
@@ -96,7 +102,8 @@ certification from Travis.
 ### Checking certifications
 
 You can check your certification against other uploaded
-certifications with `reproducibleBuildsCheckCertification`
+certifications with `reproducibleBuildsCheckCertification`.
+This feature is still a work in progress.
 
 Checking your certification with the 'official' published
 certification is currently

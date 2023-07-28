@@ -198,7 +198,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
           case e: StatusError if e.status == 404 =>
             showResult(log, VerificationResult(uri(prefix), ours.checksums, Seq.empty))
         }
-        Await.result(done, 30.seconds)
+        Await.result(done, 6.minutes)
       }
 
     },
@@ -342,7 +342,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
 
     val targetFilePath = targetDirPath.toPath.resolve("reproducible-builds-report.md")
 
-    Files.write(targetFilePath, Await.result(report, 30.seconds).getBytes(Charset.forName("UTF-8")))
+    Files.write(targetFilePath, Await.result(report, 5.minutes).getBytes(Charset.forName("UTF-8")))
 
     targetFilePath.toFile
   }

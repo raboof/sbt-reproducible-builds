@@ -1,6 +1,6 @@
 package net.bzzt.reproduciblebuilds
 
-import sbtassembly.{Assembly, AssemblyPlugin}
+import sbtassembly.AssemblyPlugin
 import sbtassembly.AssemblyPlugin.autoImport.{Assembly => _, baseAssemblySettings => _, _}
 import sbt._
 import sbt.Keys._
@@ -18,10 +18,8 @@ object AssemblyHelpers {
         if (options.prependShellScript.isDefined) {
           log.warn("Cannot make assembly reproducible when prependShellScript is set")
           jar
-        }
-        else {
+        } else
           ReproducibleBuildsPlugin.postProcessJar(jar)
-        }
       }
     )
 }

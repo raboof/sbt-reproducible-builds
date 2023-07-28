@@ -11,10 +11,9 @@ import org.apache.ivy.core.module.id.ModuleRevisionId
 import sbt.librarymanagement.ScalaModuleInfo
 import sbt.{Artifact, ConfigRef, Configuration, CrossVersion, ExclusionRule, InlineConfiguration, ModuleID, ModuleInfo}
 
-/**
- * These functions where copied from sbt-library-management (see https://github.com/sbt/librarymanagement) since
- * they are package private. I
- */
+/** These functions where copied from sbt-library-management (see https://github.com/sbt/librarymanagement) since they
+  * are package private. I
+  */
 private[reproduciblebuilds] object SbtLibraryManagementFunctions {
   def javaMap(m: Map[String, String], unqualify: Boolean = false) = {
     import scala.collection.JavaConverters._
@@ -23,34 +22,29 @@ private[reproduciblebuilds] object SbtLibraryManagementFunctions {
     if (map.isEmpty) null else map.asJava
   }
 
-  def extra(artifact: Artifact,
-            unqualify: Boolean = false
-           ): java.util.Map[String, String] = {
+  def extra(artifact: Artifact, unqualify: Boolean = false): java.util.Map[String, String] = {
     val ea = artifact.classifier match {
       case Some(c) => artifact.extra("e:classifier" -> c);
-      case None => artifact
+      case None    => artifact
     }
     javaMap(ea.extraAttributes, unqualify)
   }
 
   def copyConfigurations(artifact: Artifact,
                          addConfiguration: ConfigRef => Unit,
-                         allConfigurations: Vector[ConfigRef]): Unit = {
+                         allConfigurations: Vector[ConfigRef]
+  ): Unit = {
     val confs =
       if (artifact.configurations.isEmpty) allConfigurations
       else artifact.configurations
     confs foreach addConfiguration
   }
 
-  def toIvyArtifact(moduleID: ModuleDescriptor,
-                    a: Artifact,
-                    allConfigurations: Vector[ConfigRef]): MDArtifact = {
+  def toIvyArtifact(moduleID: ModuleDescriptor, a: Artifact, allConfigurations: Vector[ConfigRef]): MDArtifact = {
     val artifact = new MDArtifact(moduleID, a.name, a.`type`, a.extension, null, extra(a, false))
     copyConfigurations(
       a,
-      (ref: ConfigRef) => {
-        artifact.addConfiguration(ref.name)
-      },
+      (ref: ConfigRef) => artifact.addConfiguration(ref.name),
       allConfigurations
     )
     artifact
@@ -78,9 +72,7 @@ private[reproduciblebuilds] object SbtLibraryManagementFunctions {
     for (art <- mapArtifacts(moduleID, artifacts.toSeq); c <- art.getConfigurations)
       moduleID.addArtifact(c, art)
 
-  def addConfigurations(mod: DefaultModuleDescriptor,
-                        configurations: Iterable[Configuration]
-                       ): Unit =
+  def addConfigurations(mod: DefaultModuleDescriptor, configurations: Iterable[Configuration]): Unit =
     configurations.foreach(config => mod.addConfiguration(toIvyConfiguration(config)))
 
   def toIvyConfiguration(configuration: Configuration) = {
@@ -97,21 +89,19 @@ private[reproduciblebuilds] object SbtLibraryManagementFunctions {
     )
   }
 
-  def substituteCross(ic: InlineConfiguration): InlineConfiguration = {
+  def substituteCross(ic: InlineConfiguration): InlineConfiguration =
     ic.scalaModuleInfo match {
-      case None => ic
+      case None     => ic
       case Some(is) => substituteCross(ic, is.scalaFullVersion, is.scalaBinaryVersion)
     }
-  }
 
   def applyCross(s: String, fopt: Option[String => String]): String =
     fopt match {
-      case None => s
+      case None       => s
       case Some(fopt) => fopt(s)
     }
 
-  def substituteCross(exclude: ExclusionRule,
-                      is: Option[ScalaModuleInfo]): ExclusionRule = {
+  def substituteCross(exclude: ExclusionRule, is: Option[ScalaModuleInfo]): ExclusionRule = {
     val fopt: Option[String => String] =
       is flatMap { i =>
         CrossVersion(exclude.crossVersion, i.scalaFullVersion, i.scalaBinaryVersion)
@@ -121,7 +111,8 @@ private[reproduciblebuilds] object SbtLibraryManagementFunctions {
 
   private def substituteCross(ic: InlineConfiguration,
                               scalaFullVersion: String,
-                              scalaBinaryVersion: String): InlineConfiguration = {
+                              scalaBinaryVersion: String
+  ): InlineConfiguration = {
     val applyCross = CrossVersion(scalaFullVersion, scalaBinaryVersion)
 
     def propagateCrossVersion(moduleID: ModuleID): ModuleID = {
@@ -135,9 +126,7 @@ private[reproduciblebuilds] object SbtLibraryManagementFunctions {
       .withDependencies(ic.dependencies.map(propagateCrossVersion))
       .withOverrides(ic.overrides map applyCross)
   }
-  def newConfiguredModuleID(module: ModuleID,
-                            moduleInfo: ModuleInfo,
-                            configurations: Iterable[Configuration]) = {
+  def newConfiguredModuleID(module: ModuleID, moduleInfo: ModuleInfo, configurations: Iterable[Configuration]) = {
     val mod = new DefaultModuleDescriptor(toID(module), "release", null, false)
     mod.setLastModified(System.currentTimeMillis)
     mod.setDescription(moduleInfo.description)

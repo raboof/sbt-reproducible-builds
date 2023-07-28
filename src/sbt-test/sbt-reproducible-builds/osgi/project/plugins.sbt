@@ -4,5 +4,4 @@ sys.props.get("plugin.version") match {
                          |Specify this property using the scriptedLaunchOpts -D.""".stripMargin)
 }
 
-
 addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.9.4")

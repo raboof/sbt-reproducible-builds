@@ -9,10 +9,7 @@ object GpgHelpers {
   val settings: Seq[Setting[_]] =
     Seq(
       packagedArtifacts := {
-      packagedArtifactsImpl(
-        packagedArtifacts.value,
-        gpg.value,
-        gpgWarnOnFailure.value)(streams.value.log.warn(_))
-    }
-  )
+        packagedArtifactsImpl(packagedArtifacts.value, gpg.value, gpgWarnOnFailure.value)(streams.value.log.warn(_))
+      }
+    )
 }

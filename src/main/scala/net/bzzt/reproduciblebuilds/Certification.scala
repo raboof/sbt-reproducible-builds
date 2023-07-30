@@ -16,16 +16,15 @@
 
 package net.bzzt.reproduciblebuilds
 
+import sbt.librarymanagement.ScmInfo
+import sbt.{Artifact, File, ModuleID}
+
 import java.io.StringReader
 import java.math.BigInteger
 import java.nio.file.Files
 import java.security.MessageDigest
 
-import sbt.{Artifact, File, ModuleID}
-import sbt.librarymanagement.ScmInfo
-
-import scala.collection.mutable
-import scala.collection.immutable
+import scala.collection.{immutable, mutable}
 
 case class Checksum(filename: String, length: Int, checksum: List[Byte]) {
   def hexChecksum = checksum.map("%02x" format _).mkString
@@ -58,7 +57,6 @@ case class Certification(
   )
 
   def asPropertyString: String = {
-    val packageName = groupId + ":" + artifactId
     val content = mutable.LinkedHashMap(
       "buildinfo.version" -> "0.1-SNAPSHOT",
       "name" -> name,

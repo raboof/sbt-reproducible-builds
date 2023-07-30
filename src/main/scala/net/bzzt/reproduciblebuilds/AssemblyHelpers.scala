@@ -16,10 +16,10 @@
 
 package net.bzzt.reproduciblebuilds
 
+import sbt.Keys._
+import sbt._
 import sbtassembly.AssemblyPlugin
 import sbtassembly.AssemblyPlugin.autoImport.{Assembly => _, baseAssemblySettings => _, _}
-import sbt._
-import sbt.Keys._
 
 object AssemblyHelpers {
   val plugin: Plugins.Basic = AssemblyPlugin

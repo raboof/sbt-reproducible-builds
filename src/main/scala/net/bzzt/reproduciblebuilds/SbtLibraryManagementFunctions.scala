@@ -1,11 +1,11 @@
 package net.bzzt.reproduciblebuilds
 
 import org.apache.ivy.core.module.descriptor.{
+  Artifact => IArtifact,
   DefaultModuleDescriptor,
   License,
   MDArtifact,
-  ModuleDescriptor,
-  Artifact => IArtifact
+  ModuleDescriptor
 }
 import org.apache.ivy.core.module.id.ModuleRevisionId
 import sbt.librarymanagement.ScalaModuleInfo

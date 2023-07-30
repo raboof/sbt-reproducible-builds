@@ -18,8 +18,8 @@ package net.bzzt.reproduciblebuilds
 
 import com.typesafe.sbt.packager.universal.UniversalPlugin
 import com.typesafe.sbt.packager.universal.UniversalPlugin.autoImport._
-import sbt._
 import sbt.Keys._
+import sbt._
 
 /** Helper code for sbt-native-packager integration.
   *

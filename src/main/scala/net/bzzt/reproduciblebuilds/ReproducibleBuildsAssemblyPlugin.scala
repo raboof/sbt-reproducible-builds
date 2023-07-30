@@ -16,10 +16,10 @@
 
 package net.bzzt.reproduciblebuilds
 
-import scala.util.Try
-
 import sbt._
 import sbt.plugins.JvmPlugin
+
+import scala.util.Try
 
 object ReproducibleBuildsAssemblyPlugin extends AutoPlugin {
   val assemblyPluginOnClasspath =

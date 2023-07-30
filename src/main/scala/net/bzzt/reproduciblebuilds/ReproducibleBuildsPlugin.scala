@@ -16,29 +16,28 @@
 
 package net.bzzt.reproduciblebuilds
 
+import gigahorse.{GigahorseSupport, StatusError}
+import io.github.zlika.reproducible._
+import org.apache.ivy.core.IvyPatternHelper
+import org.apache.ivy.plugins.resolver.DependencyResolver
+import sbt.Classpaths._
+import sbt.Keys._
+import sbt.io.syntax.{URI, uri}
+import sbt.librarymanagement.Artifact
+import sbt.librarymanagement.Http.http
+import sbt.plugins.JvmPlugin
+import sbt.util.Logger
+import sbt.{io => _, _}
+import spray.json._
+
 import java.net.InetAddress
 import java.nio.charset.Charset
 import java.nio.file.Files
 
-import scala.concurrent.duration._
-import gigahorse.{GigahorseSupport, StatusError}
-import sbt.{io => _, _}
-import sbt.Keys._
-import sbt.Classpaths._
-import sbt.plugins.JvmPlugin
-import io.github.zlika.reproducible._
-import org.apache.ivy.core.IvyPatternHelper
-import org.apache.ivy.plugins.resolver.DependencyResolver
-import sbt.io.syntax.{URI, uri}
-import sbt.librarymanagement.Artifact
-import sbt.librarymanagement.Http.http
-import sbt.util.Logger
-
-import scala.util.Try
-import spray.json._
-
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
+import scala.util.Try
 
 object ReproducibleBuildsPlugin extends AutoPlugin {
   // To make sure we're loaded after the defaults
@@ -210,7 +209,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       .value,
     reproducibleBuildsCheckCertification := {
       val ours = ourCertification.value
-      val groupId = organization.value
+      organization.value
       val pTo = (ReproducibleBuilds / publishTo).value.getOrElse(bzztNetResolver)
       Def.task {
         val prefix = artifactUrl(pTo, "buildinfo").value
@@ -354,7 +353,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
           Future
             .sequence {
               result.verdicts
-                .collect { case (filename: String, m: Mismatch) =>
+                .collect { case (filename: String, _: Mismatch) =>
                   val ext = filename.substring(filename.lastIndexOf('.') + 1)
                   val mavenArtifactUrl = artifactUrl(resolver, "").value + ext
 
@@ -366,7 +365,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
                     case List() =>
                       throw new IllegalStateException(s"Did not find local artifact for $artifactName ($ext)")
                     case List(artifact) => artifact
-                    case multiple       => throw new IllegalStateException(s"Found multiple artifacts for $ext")
+                    case _              => throw new IllegalStateException(s"Found multiple artifacts for $ext")
                   }
 
                   http

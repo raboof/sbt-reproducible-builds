@@ -54,3 +54,6 @@ inThisBuild(
     )
   )
 )
+
+addCommandAlias("applyCodeStyle", ";+clean ;scalafixAll ;scalafmtAll; scalafmtSbt")
+addCommandAlias("checkCodeStyle", ";+clean ;scalafixAll --check ;scalafmtCheckAll; scalafmtSbtCheck")

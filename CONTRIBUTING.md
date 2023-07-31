@@ -1,4 +1,10 @@
-# Contributing to Sbt Reproducible Builds
+# Contributing to sbt-reproducible-builds
+
+Contributions to sbt-reproducible-builds are much appreciated!
+
+You're welcome to just open a PR. When you're planning larger changes you might
+want to open an issue and discuss the idea first, to avoid disappointment
+later.
 
 ## Applying code style to the project
 

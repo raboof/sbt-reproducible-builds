@@ -35,7 +35,7 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.17" % "test"
 // Optional integration:
 addSbtPlugin("com.github.sbt" %% "sbt-native-packager" % "1.9.16" % Provided)
 addSbtPlugin("io.crashbox" %% "sbt-gpg" % "0.2.1" % Provided)
-addSbtPlugin("com.eed3si9n" %% "sbt-assembly" % "2.1.3" % Provided)
+addSbtPlugin("com.eed3si9n" %% "sbt-assembly" % "2.1.5" % Provided)
 // addSbtPlugin("com.jsuereth" % "sbt-pgp" % sbtPgpVersion % Provided)
 
 scriptedLaunchOpts := {

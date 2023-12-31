@@ -18,7 +18,7 @@ jobs:
           persist-credentials: false
 
       - name: Check project is formatted
-        uses: jrouly/scalafmt-native-action@v2
+        # https://github.com/jrouly/scalafmt-native-action/pull/363
+        uses: raboof/scalafmt-native-action@0f1daa11b1b9abaa574aac6b24a26f14413fd7f8
         with:
-          version: '3.7.11'
           arguments: '--list --mode diff-ref=origin/main'

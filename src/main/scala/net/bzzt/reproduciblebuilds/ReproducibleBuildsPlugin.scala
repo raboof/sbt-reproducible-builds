@@ -374,22 +374,22 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
                   http
                     .run(GigahorseSupport.url(mavenArtifactUrl))
                     .map { entity =>
-                      val mavenCentralArtifactsPath = targetDirPath.toPath.resolve("mavenCentralArtifact")
-                      mavenCentralArtifactsPath.toFile.mkdirs()
-                      val mavenCentralArtifact = mavenCentralArtifactsPath.resolve(artifactName)
+                      val downloadedArtifactsPath = targetDirPath.toPath.resolve("downloadedArtifact")
+                      downloadedArtifactsPath.toFile.mkdirs()
+                      val downloadedArtifact = downloadedArtifactsPath.resolve(artifactName)
                       Files.write(
-                        mavenCentralArtifact,
+                        downloadedArtifact,
                         entity.bodyAsByteBuffer.array()
                       )
                       val diffoscopeOutputDir =
                         targetDirPath.toPath.resolve(s"reproducible-builds-diffoscope-output-$artifactName")
-                      val cmd = s"diffoscope --html-dir $diffoscopeOutputDir $ourArtifact $mavenCentralArtifact"
+                      val cmd = s"diffoscope --html-dir $diffoscopeOutputDir $ourArtifact $downloadedArtifact"
                       new ProcessBuilder(
                         "diffoscope",
                         "--html-dir",
                         diffoscopeOutputDir.toFile.getAbsolutePath,
                         ourArtifact.getAbsolutePath,
-                        mavenCentralArtifact.toFile.getAbsolutePath
+                        downloadedArtifact.toFile.getAbsolutePath
                       ).start().waitFor()
                       log.info(s"Running '$cmd' for a detailed report on the differences")
                       s"See the [diffoscope report](reproducible-builds-diffoscope-output-$artifactName/index.html) for a detailed explanation " +

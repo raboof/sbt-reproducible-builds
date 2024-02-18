@@ -323,7 +323,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     jar,
     new ZipStripper()
       .addFileStripper("META-INF/MANIFEST.MF", new ManifestStripper())
-      .addFileStripper("META-INF/maven/\\S*/pom.properties", new PomPropertiesStripper())
+      .addFileStripper("META-INF/maven/\\S*/pom.properties", new PropertiesFileStripper())
   )
 
   def postProcessZip(zip: File): File = postProcessWith(zip, new ZipStripper())

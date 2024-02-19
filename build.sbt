@@ -27,7 +27,7 @@ enablePlugins(ReproducibleBuildsPlugin)
 enablePlugins(SbtPlugin)
 enablePlugins(ScriptedPlugin)
 
-libraryDependencies += "net.bzzt" % "reproducible-builds-jvm-stripper" % "0.9"
+libraryDependencies += "net.bzzt" % "reproducible-builds-jvm-stripper" % "0.10"
 libraryDependencies += "io.spray" %% "spray-json" % "1.3.6"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.17" % "test"

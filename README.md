@@ -25,7 +25,7 @@ in future versions.
 Then add to your `project/plugins.sbt`:
 
 ```
-addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.31")
+addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.32")
 ```
 
 And to `build.sbt`:

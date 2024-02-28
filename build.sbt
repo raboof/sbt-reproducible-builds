@@ -15,7 +15,7 @@ developers := List(
   )
 )
 
-scalaVersion := "2.12.18"
+scalaVersion := "2.12.19"
 
 /** should work with later sbt versions as well (tested at least with 1.4.x)
   */

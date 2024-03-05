@@ -3,6 +3,7 @@ import sbt.Keys.{semanticdbEnabled, semanticdbVersion}
 sbtPlugin := true
 
 organization := "net.bzzt"
+name := "sbt-reproducible-builds"
 startYear := Some(2017)
 homepage := Some(url("https://github.com/raboof/sbt-reproducible-builds"))
 licenses := List(("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.txt")))

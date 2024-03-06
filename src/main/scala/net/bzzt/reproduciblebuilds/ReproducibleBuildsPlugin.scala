@@ -107,9 +107,8 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
   def substitutePattern(pattern: String, ext: String) = Def.task {
     import scala.collection.JavaConverters._
     val extraModuleAttributes = {
-      val scalaVer = Map("scalaVersion" -> scalaBinaryVersion.value)
-      if (sbtPlugin.value) scalaVer + ("sbtVersion" -> sbtBinaryVersion.value)
-      else scalaVer
+      (if (crossPaths.value) Map("scalaVersion" -> scalaBinaryVersion.value) else Map.empty) ++
+        (if (sbtPlugin.value) Map("sbtVersion" -> sbtBinaryVersion.value) else Map.empty)
     }.asJava
 
     IvyPatternHelper.substitute(
@@ -152,7 +151,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       case repository: MavenRepository =>
         val pattern = resolvePattern(
           repository.root,
-          "[organisation]/[module](_[scalaVersion])/[revision]/[artifact](_[scalaVersion])-[revision](-[classifier]).[ext]"
+          "[organisation]/[module](_[scalaVersion])(_[sbtVersion])/[revision]/[artifact](_[scalaVersion])(_[sbtVersion])-[revision](-[classifier]).[ext]"
         )
         substitutePattern(pattern, ext)
       case repository: PatternsBasedRepository =>

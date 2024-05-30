@@ -147,3 +147,8 @@ Some further recommendations to make your builds more reproducible:
 
 * Specify `scalaVersion` (and if applicable `crossScalaVersions`) in your build configuration
 * Use [sbt-strict-scala-versions](https://github.com/raboof/sbt-strict-scala-versions) to ensure always using those Scala versions (`addSbtPlugin("net.bzzt" % "sbt-strict-scala-versions" % "0.0.1")`)
+
+# Security
+
+If you find a security issue in this project, please email
+arnout@bzzt.net . Those reports will be treated confidentially.

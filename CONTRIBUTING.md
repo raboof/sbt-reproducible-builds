@@ -22,3 +22,7 @@ git blame to ignore these commits you can execute the following.
 ```shell
 git config blame.ignoreRevsFile .git-blame-ignore-revs
 ```
+
+## Testing
+
+Any major new functionality should be accompanied with unit tests.

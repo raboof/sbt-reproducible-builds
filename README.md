@@ -141,6 +141,11 @@ because this file contains the transitive dependencies for the artifact, so a
 backdoor can be introduced by adding a rogue transitive dependency to this
 file. This issue is tracked under [#84](https://github.com/raboof/sbt-reproducible-builds/issues/84).
 
+## External interfaces
+
+This plugin fetches artifacts and attestations to compare against
+the built artifacts from the configured repositories.
+
 ## Further recommendations
 
 Some further recommendations to make your builds more reproducible:

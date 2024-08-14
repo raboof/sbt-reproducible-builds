@@ -1,6 +1,6 @@
 addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.6.0")
 
-addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.32+10-1c096efd-SNAPSHOT")
+addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.32+39-5875f1bb-SNAPSHOT")
 resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
 addSbtPlugin("net.bzzt" % "sbt-strict-scala-versions" % "0.0.1")

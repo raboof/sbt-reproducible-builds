@@ -24,26 +24,40 @@ sbtVersion := "1.2.7"
 
 val sbtPgpVersion = "1.1.2"
 
+crossScalaVersions := Nil
+publish / skip := true // don't publish the root project
+
 enablePlugins(ReproducibleBuildsPlugin)
-enablePlugins(SbtPlugin)
-enablePlugins(ScriptedPlugin)
 
-libraryDependencies += "net.bzzt" % "reproducible-builds-jvm-stripper" % "0.10"
-libraryDependencies += "io.spray" %% "spray-json" % "1.3.6"
+lazy val plugin = project
+  .enablePlugins(SbtPlugin)
+  .enablePlugins(ScriptedPlugin)
+  // Optional integration:
+  .settings(Seq(
+    crossScalaVersions := Seq("3.3.4", "2.12.20"),
+    (pluginCrossBuild / sbtVersion) := {
+      scalaBinaryVersion.value match {
+        case "2.12" => "1.5.8"
+        case _      => "2.0.0-M2"
+      }
+    },
+    // TODO https://github.com/sbt/sbt-native-packager/issues/1638
+    //addSbtPlugin("com.github.sbt" %% "sbt-native-packager" % "1.10.4" % Provided),
+    // TODO
+    // addSbtPlugin("io.crashbox" %% "sbt-gpg" % "0.2.1" % Provided),
+    addSbtPlugin("com.eed3si9n" %% "sbt-assembly" % "2.3.0" % Provided),
+    // addSbtPlugin("com.jsuereth" % "sbt-pgp" % sbtPgpVersion % Provided)
+    libraryDependencies += "net.bzzt" % "reproducible-builds-jvm-stripper" % "0.10",
+    libraryDependencies += "io.spray" %% "spray-json" % "1.3.6",
+    libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test",
+    scriptedLaunchOpts := {
+      scriptedLaunchOpts.value ++
+        Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
+    },
+    scriptedBufferLog := false
+    
+    ))
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test"
-
-// Optional integration:
-addSbtPlugin("com.github.sbt" %% "sbt-native-packager" % "1.10.4" % Provided)
-addSbtPlugin("io.crashbox" %% "sbt-gpg" % "0.2.1" % Provided)
-addSbtPlugin("com.eed3si9n" %% "sbt-assembly" % "2.3.0" % Provided)
-// addSbtPlugin("com.jsuereth" % "sbt-pgp" % sbtPgpVersion % Provided)
-
-scriptedLaunchOpts := {
-  scriptedLaunchOpts.value ++
-    Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
-}
-scriptedBufferLog := false
 
 // scalafix specific settings
 inThisBuild(

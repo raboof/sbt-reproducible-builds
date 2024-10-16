@@ -241,9 +241,9 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
 
     },
     ivyConfigurations += ReproducibleBuilds
-  ) ++ (
-    if (universalPluginOnClasspath) SbtNativePackagerHelpers.settings
-    else Seq.empty
+  //) ++ (
+  //  if (universalPluginOnClasspath) SbtNativePackagerHelpers.settings
+  //  else Seq.empty
   ) ++ inConfig(ReproducibleBuilds)(
     Seq(
       packagedArtifacts := {
@@ -315,8 +315,9 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     log.info(result.asMarkdown)
 
   private def gpgPluginSettings =
-    if (gpgPluginOnClasspath) GpgHelpers.settings
-    else Seq.empty
+    //if (gpgPluginOnClasspath) GpgHelpers.settings
+    //else Seq.empty
+    Seq.empty
 
   def postProcessJar(jar: File): File = postProcessWith(
     jar,

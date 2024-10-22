@@ -1,4 +1,4 @@
-addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.8.0")
+addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.9.0")
 
 addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.32+10-1c096efd-SNAPSHOT")
 resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"

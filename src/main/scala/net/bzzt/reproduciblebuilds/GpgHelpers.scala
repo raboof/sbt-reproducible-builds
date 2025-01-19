@@ -24,8 +24,7 @@ import sbt.Setting
 object GpgHelpers {
   val settings: Seq[Setting[_]] =
     Seq(
-      packagedArtifacts := {
+      packagedArtifacts :=
         packagedArtifactsImpl(packagedArtifacts.value, gpg.value, gpgWarnOnFailure.value)(streams.value.log.warn(_))
-      }
     )
 }

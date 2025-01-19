@@ -267,7 +267,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       },
       publishTo := Some(bzztNetResolver)
     ) ++ gpgPluginSettings ++ Seq(
-      publishConfiguration := {
+      publishConfiguration :=
         publishConfig(
           // avoid uploading an ivy-[version].xml
           publishMavenStyle = true,
@@ -281,8 +281,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
           },
           ivyLoggingLevel.value,
           isSnapshot.value
-        )
-      },
+        ),
       publishLocalConfiguration := publishConfig(
         // avoid overwriting an ivy-[version].xml
         publishMavenStyle = true,

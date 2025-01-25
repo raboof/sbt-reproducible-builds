@@ -39,10 +39,9 @@ addSbtPlugin("io.crashbox" %% "sbt-gpg" % "0.2.1" % Provided)
 addSbtPlugin("com.eed3si9n" %% "sbt-assembly" % "2.3.1" % Provided)
 // addSbtPlugin("com.jsuereth" % "sbt-pgp" % sbtPgpVersion % Provided)
 
-scriptedLaunchOpts := {
+scriptedLaunchOpts :=
   scriptedLaunchOpts.value ++
     Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
-}
 scriptedBufferLog := false
 
 // scalafix specific settings

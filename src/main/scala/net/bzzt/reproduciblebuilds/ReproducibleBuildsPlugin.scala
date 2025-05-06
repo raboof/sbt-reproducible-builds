@@ -404,7 +404,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
 
     val targetFilePath = targetDirPath.toPath.resolve("reproducible-builds-report.md")
 
-    Files.write(targetFilePath, Await.result(report, 5.minutes).getBytes(Charset.forName("UTF-8")))
+    Files.write(targetFilePath, Await.result(report, 50.minutes).getBytes(Charset.forName("UTF-8")))
 
     targetFilePath.toFile
   }

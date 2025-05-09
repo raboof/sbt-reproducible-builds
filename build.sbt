@@ -1,4 +1,5 @@
 import sbt.Keys.{semanticdbEnabled, semanticdbVersion}
+import xerial.sbt.Sonatype.sonatypeCentralHost
 
 sbtPlugin := true
 
@@ -15,6 +16,7 @@ developers := List(
     url("https://arnout.engelen.eu")
   )
 )
+ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
 
 scalaVersion := "2.12.20"
 

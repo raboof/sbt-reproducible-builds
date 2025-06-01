@@ -363,7 +363,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
                     case List() =>
                       throw new IllegalStateException(s"Did not find local artifact for $artifactName ($ext)")
                     case List(artifact) => artifact
-                    case rest =>
+                    case rest           =>
                       throw new IllegalStateException(
                         s"Found multiple artifacts for $ext with filenames ${rest.map(_.getName).mkString(", ")}"
                       )

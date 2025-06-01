@@ -57,7 +57,7 @@ case class VerificationResult(
       remoteSums.keySet.diff(ourSums.keySet).map(missingInOurs => (missingInOurs, MissingInOurs))
 
   def verdict(filename: String, ourSum: Checksum): Verdict = remoteSums.get(filename) match {
-    case None => MissingInTheirs
+    case None           => MissingInTheirs
     case Some(checksum) =>
       if (checksum == ourSum) Match
       else Mismatch(ourSum, checksum)

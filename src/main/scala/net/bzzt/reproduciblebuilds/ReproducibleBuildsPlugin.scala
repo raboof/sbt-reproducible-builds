@@ -184,7 +184,14 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     packageBin in Compile := postProcessJar((packageBin in Compile).value),
     reproducibleBuildsPackageName := moduleName.value,
     reproducibleBuildsCertification := ourCertificationFile.value,
-    artifact in ReproducibleBuilds := Artifact(reproducibleBuildsPackageName.value, "buildinfo", "buildinfo"),
+    artifact in ReproducibleBuilds := {
+      val name =
+        if (sbtPlugin.value)
+          s"${reproducibleBuildsPackageName.value}_${scalaBinaryVersion.value}_${sbtBinaryVersion.value}"
+        else
+          reproducibleBuildsPackageName.value
+      Artifact(name, "buildinfo", "buildinfo")
+    },
     packagedArtifacts ++= {
       val generatedArtifact = Map(
         (artifact in ReproducibleBuilds).value -> ourCertificationFile.value

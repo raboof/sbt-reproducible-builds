@@ -35,7 +35,7 @@ enablePlugins(ScriptedPlugin)
 libraryDependencies += "net.bzzt" % "reproducible-builds-jvm-stripper" % "0.10"
 libraryDependencies += "io.spray" %% "spray-json" % "1.3.6"
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test"
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.20" % "test"
 
 // Optional integration:
 addSbtPlugin("com.github.sbt" %% "sbt-native-packager" % "1.11.7" % Provided)

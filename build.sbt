@@ -24,7 +24,7 @@ net.bzzt.reproduciblebuilds.ReproducibleBuildsPlugin.reproducibleBuildsPackageNa
 
 /** should work with later sbt versions as well (tested at least with 1.4.x)
   */
-sbtVersion := "1.2.7"
+sbtVersion := "1.12.9"
 
 val sbtPgpVersion = "1.1.2"
 

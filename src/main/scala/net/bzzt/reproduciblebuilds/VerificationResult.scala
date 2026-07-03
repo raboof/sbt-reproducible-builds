@@ -30,14 +30,14 @@ case object MissingInTheirs extends Verdict {
 case object MissingInOurs extends Verdict {
   val description = "Missing in ours but present in theirs"
 }
-case class Mismatch(our: Checksum, their: Checksum) extends Verdict {
+case class Mismatch(our: Checksum, their: Checksum, theirBytes: Option[Array[Byte]]) extends Verdict {
   val description = s"Mismatch: our ${our.hexChecksum} did not match their ${their.hexChecksum}"
 }
 
 case class VerificationResult(
     uri: URI,
     ourSums: Map[String, Checksum],
-    remoteSums: Map[String, Checksum]
+    remoteSums: Map[String, (Checksum, Option[Array[Byte]])]
 ) {
   def asMarkdown = {
     val artifactName = uri.toASCIIString.substring(uri.toASCIIString.lastIndexOf('/') + 1)
@@ -57,21 +57,21 @@ case class VerificationResult(
       remoteSums.keySet.diff(ourSums.keySet).map(missingInOurs => (missingInOurs, MissingInOurs))
 
   def verdict(filename: String, ourSum: Checksum): Verdict = remoteSums.get(filename) match {
-    case None           => MissingInTheirs
-    case Some(checksum) =>
+    case None                    => MissingInTheirs
+    case Some((checksum, bytes)) =>
       if (checksum == ourSum) Match
-      else Mismatch(ourSum, checksum)
+      else Mismatch(ourSum, checksum, bytes)
   }
 
   def ok = ourSums == remoteSums
 }
 
 object VerificationResult {
-  def apply(uri: URI, ourSums: Seq[Checksum], remoteSums: Seq[Checksum]) =
+  def apply(uri: URI, ourSums: Seq[Checksum], remoteSums: Seq[(Checksum, Option[Array[Byte]])]) =
     new VerificationResult(
       uri,
       groupByUnique(ourSums)(_.filename),
-      groupByUnique(remoteSums)(_.filename)
+      groupByUnique(remoteSums)(_._1.filename)
     )
 
   private def groupByUnique[K, V](elements: Seq[V])(f: V => K): Map[K, V] =

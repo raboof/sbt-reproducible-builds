@@ -1,7 +1,7 @@
 addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.11.2")
 
 //resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
-addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.32")
+addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.33")
 
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.6.1")
 

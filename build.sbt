@@ -18,10 +18,6 @@ developers := List(
 
 scalaVersion := "2.12.21"
 
-// Test for debugging Central Portal publishing problem
-//
-net.bzzt.reproduciblebuilds.ReproducibleBuildsPlugin.reproducibleBuildsPackageName := "sbt-reproducible-builds_2.12_1.0"
-
 /** should work with later sbt versions as well (tested at least with 1.4.x)
   */
 sbtVersion := "1.12.9"

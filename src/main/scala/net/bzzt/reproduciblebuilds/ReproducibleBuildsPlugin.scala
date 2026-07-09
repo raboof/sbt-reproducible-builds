@@ -114,7 +114,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
   )
   lazy val substituteInfo = Def.task[SubstituteInfo] {
     SubstituteInfo(
-      organization.value.replace('/', '.'),
+      organization.value.replace('.', '/'),
       reproducibleBuildsPackageName.value,
       version.value,
       crossPaths.value,

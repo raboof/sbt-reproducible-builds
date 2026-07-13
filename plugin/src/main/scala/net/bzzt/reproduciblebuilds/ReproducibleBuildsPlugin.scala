@@ -27,6 +27,7 @@ import sbt.librarymanagement.Http.http
 import sbt.plugins.JvmPlugin
 import sbt.util.Logger
 import sbt.{io => _, _}
+import sbtcompat.PluginCompat.{toFile, toFileRef, DefOps, FileRef}
 import spray.json._
 
 import java.net.InetAddress
@@ -54,28 +55,20 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
   val publishCertification = settingKey[Boolean]("Include the certification when publishing")
   val hostname = settingKey[String]("The hostname to include when publishing 3rd-party attestations")
 
-  val reproducibleBuildsCertification = taskKey[File]("Create a Reproducible Builds certification")
+  val reproducibleBuildsCertification = taskKey[FileRef]("Create a Reproducible Builds certification")
   val reproducibleBuildsCheckCertification = taskKey[Unit]("Download and compare Reproducible Builds certifications")
   @deprecated(
     "Use reproducibleBuildsCheck along with reproducibleBuildsCheckResolver := Resolver.DefaultMavenRepository"
   )
   val reproducibleBuildsCheckMavenCentral =
-    taskKey[File]("Compare Reproducible Build certifications against those published on Maven Central")
+    taskKey[FileRef]("Compare Reproducible Build certifications against those published on Maven Central")
   val reproducibleBuildsCheck =
-    taskKey[File]("Compare Reproducible Build certifications against those published on Maven Central")
+    taskKey[FileRef]("Compare Reproducible Build certifications against those published on Maven Central")
   val reproducibleBuildsCheckResolver = taskKey[Resolver](
     "Which repository to check build certifications against. Defaults to publishTo or Maven if its not defined"
   )
 
-  val bzztNetResolver = Resolver.url("repo.bzzt.net", url("https://repo.bzzt.net"))(
-    Patterns().withArtifactPatterns(
-      Vector(
-        // We default to a Maven-style pattern with host and timestamp to reduce naming collisions, and branch if populated
-        "[organisation]/[module](_[scalaVersion])(_[sbtVersion])/([branch]/)[revision]/[artifact]-[revision](-[classifier])(-[host])(-[timestamp]).[ext]"
-      )
-    )
-  )
-
+  @transient
   lazy val ourCertification = Def.task[Certification] {
     Certification(
       organization.value,
@@ -90,7 +83,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     )
   }
 
-  lazy val ourCertificationFile = Def.task[File] {
+  lazy val ourCertificationFile = Def.task[FileRef] {
     val certification = ourCertification.value
 
     val targetDirPath = crossTarget.value
@@ -100,7 +93,8 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
 
     Files.write(targetFilePath, certification.asPropertyString.getBytes(Charset.forName("UTF-8")))
 
-    targetFilePath.toFile
+    implicit val conv: xsbti.FileConverter = fileConverter.value
+    toFileRef(targetFilePath.toFile)
   }
 
   case class SubstituteInfo(
@@ -174,15 +168,20 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
   }
 
   override lazy val buildSettings = Seq(
-    reproducibleBuildsCheckResolver := publishTo.value.getOrElse(Resolver.DefaultMavenRepository)
+    reproducibleBuildsCheckResolver := Def.uncached {
+      publishTo.value.getOrElse(Resolver.DefaultMavenRepository)
+    }
   )
 
   override lazy val projectSettings = Seq(
     publishCertification := true,
     hostname := InetAddress.getLocalHost.getHostName,
-    Compile / packageBin := postProcessJar((Compile / packageBin).value),
+    Compile / packageBin := Def.uncached {
+      implicit val conv: xsbti.FileConverter = fileConverter.value
+      toFileRef(postProcessJar(toFile((Compile / packageBin).value)))
+    },
     reproducibleBuildsPackageName := moduleName.value,
-    reproducibleBuildsCertification := ourCertificationFile.value,
+    reproducibleBuildsCertification := Def.uncached(ourCertificationFile.value),
     ReproducibleBuilds / artifact := {
       val name =
         if (sbtPlugin.value)
@@ -191,32 +190,36 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
           reproducibleBuildsPackageName.value
       Artifact(name, "buildinfo", "buildinfo")
     },
-    packagedArtifacts ++= {
+    packagedArtifacts ++= Def.uncached {
       val generatedArtifact = Map(
         (ReproducibleBuilds / artifact).value -> ourCertificationFile.value
       )
 
-      if (publishCertification.value) generatedArtifact else Map.empty[Artifact, File]
+      if (publishCertification.value) generatedArtifact else Map.empty[Artifact, FileRef]
     },
-    reproducibleBuildsCheck := Def
-      .taskDyn(
-        reproducibleBuildsCheckImpl(
-          reproducibleBuildsCheckResolver.value,
-          substituteInfo.value
+    reproducibleBuildsCheck := Def.uncached {
+      Def
+        .taskDyn(
+          reproducibleBuildsCheckImpl(
+            reproducibleBuildsCheckResolver.value,
+            substituteInfo.value
+          )
         )
-      )
-      .value,
-    reproducibleBuildsCheckMavenCentral := Def
-      .taskDyn(
-        reproducibleBuildsCheckImpl(
-          Resolver.DefaultMavenRepository,
-          substituteInfo.value
+        .value
+    },
+    reproducibleBuildsCheckMavenCentral := Def.uncached {
+      Def
+        .taskDyn(
+          reproducibleBuildsCheckImpl(
+            Resolver.DefaultMavenRepository,
+            substituteInfo.value
+          )
         )
-      )
-      .value,
-    reproducibleBuildsCheckCertification := {
+        .value
+    },
+    reproducibleBuildsCheckCertification := Def.uncached {
       val ours = ourCertification.value
-      val pTo = (ReproducibleBuilds / publishTo).value.getOrElse(bzztNetResolver)
+      val pTo = (ReproducibleBuilds / publishTo).value.getOrElse(DefaultMavenRepository)
       val info = substituteInfo.value
       Def.task {
         val prefix = artifactUrl(pTo, "buildinfo", None, info)
@@ -249,12 +252,12 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
 
     },
     ivyConfigurations += ReproducibleBuilds
-  ) ++ (
-    if (universalPluginOnClasspath) SbtNativePackagerHelpers.settings
-    else Seq.empty
+    // ) ++ (
+    //  if (universalPluginOnClasspath) SbtNativePackagerHelpers.settings
+    //  else Seq.empty
   ) ++ inConfig(ReproducibleBuilds)(
     Seq(
-      packagedArtifacts := {
+      packagedArtifacts := Def.uncached {
         val compiledArtifacts = (Compile / packagedArtifacts).value
         val generatedArtifact = Map((ReproducibleBuilds / artifact).value -> reproducibleBuildsCertification.value)
 
@@ -272,46 +275,63 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
            value
           )
         }
-      },
-      publishTo := Some(bzztNetResolver)
+      }
+      // publishTo := Some(bzztNetResolver)
     ) ++ gpgPluginSettings ++ Seq(
-      publishConfiguration :=
+      publishConfiguration := Def.uncached {
+        implicit val converter = fileConverter.value
+        val artifacts = packagedArtifacts.value.toVector.map { case (a, vf) =>
+          a -> toFile(vf)
+        };
         publishConfig(
           // avoid uploading an ivy-[version].xml
           publishMavenStyle = true,
           deliverPattern(crossTarget.value),
           if (isSnapshot.value) "integration" else "release",
           ivyConfigurations.value.map(c => ConfigRef(c.name)).toVector,
-          packagedArtifacts.value.toVector,
+          artifacts,
           checksums.value.toVector, { // resolvername: not required if publishTo is false
             val publishToOption = publishTo.value
             if (publishArtifact.value) getPublishTo(publishToOption).name else "local"
           },
           ivyLoggingLevel.value,
           isSnapshot.value
-        ),
-      publishLocalConfiguration := publishConfig(
-        // avoid overwriting an ivy-[version].xml
-        publishMavenStyle = true,
-        deliverPattern(crossTarget.value),
-        if (isSnapshot.value) "integration" else "release",
-        ivyConfigurations.value.map(c => ConfigRef(c.name)).toVector,
-        packagedArtifacts.value.toVector,
-        checksums.value.toVector,
-        logging = ivyLoggingLevel.value,
-        overwrite = isSnapshot.value
-      ),
-      publishM2Configuration := publishConfig(
-        publishMavenStyle = true,
-        deliverPattern(crossTarget.value),
-        if (isSnapshot.value) "integration" else "release",
-        ivyConfigurations.value.map(c => ConfigRef(c.name)).toVector,
-        packagedArtifacts.value.toVector,
-        checksums = checksums.value.toVector,
-        resolverName = Resolver.publishMavenLocal.name,
-        logging = ivyLoggingLevel.value,
-        overwrite = isSnapshot.value
-      ),
+        )
+      },
+      publishLocalConfiguration := Def.uncached {
+        implicit val conv = fileConverter.value
+        val artifacts = packagedArtifacts.value.toVector.map { case (a, vf) =>
+          a -> toFile(vf)
+        }
+        publishConfig(
+          // avoid overwriting an ivy-[version].xml
+          publishMavenStyle = true,
+          deliverPattern(crossTarget.value),
+          if (isSnapshot.value) "integration" else "release",
+          ivyConfigurations.value.map(c => ConfigRef(c.name)).toVector,
+          artifacts,
+          checksums.value.toVector,
+          logging = ivyLoggingLevel.value,
+          overwrite = isSnapshot.value
+        )
+      },
+      publishM2Configuration := Def.uncached {
+        implicit val conv = fileConverter.value
+        val artifacts = packagedArtifacts.value.toVector.map { case (a, vf) =>
+          a -> toFile(vf)
+        }
+        publishConfig(
+          publishMavenStyle = true,
+          deliverPattern(crossTarget.value),
+          if (isSnapshot.value) "integration" else "release",
+          ivyConfigurations.value.map(c => ConfigRef(c.name)).toVector,
+          artifacts,
+          checksums = checksums.value.toVector,
+          resolverName = Resolver.publishMavenLocal.name,
+          logging = ivyLoggingLevel.value,
+          overwrite = isSnapshot.value
+        )
+      },
       publish := publishOrSkip(publishConfiguration, publish / skip).value,
       publishLocal := publishOrSkip(publishLocalConfiguration, publishLocal / skip).value,
       publishM2 := publishOrSkip(publishM2Configuration, publishM2 / skip).value
@@ -322,8 +342,9 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     log.info(result.asMarkdown)
 
   private def gpgPluginSettings =
-    if (gpgPluginOnClasspath) GpgHelpers.settings
-    else Seq.empty
+    // if (gpgPluginOnClasspath) GpgHelpers.settings
+    // else Seq.empty
+    Seq.empty
 
   def postProcessJar(jar: File): File = postProcessWith(
     jar,
@@ -350,11 +371,12 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     val log = streams.value.log
     log.info(s"Downloading certification from [$url]")
     val targetDirPath = crossTarget.value
+    implicit val conv: xsbti.FileConverter = fileConverter.value
 
     val ourArtifacts = (Compile / packagedArtifacts).value
-    val ourArtifactFilesByFilename = ourArtifacts.map { case (_, file) => (file.getName, file) }.toMap
+    val ourArtifactFilesByFilename = ourArtifacts.map { case (_, file) => (file.name, file) }.toMap
     val publishedUrlByFilename = (Compile / packagedArtifacts)
-      .map(m => m.keys.map(a => (m(a).getName, artifactUrl(resolver, a.extension, a.classifier, info))))
+      .map(m => m.keys.map(a => (m(a).name, artifactUrl(resolver, a.extension, a.classifier, info))))
       .value
       .toMap
 
@@ -375,7 +397,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
                       throw new IllegalStateException(
                         s"Did not find local artifact for $artifactName ($mavenArtifactUrl)"
                       )
-                    case Some(artifactFile) => artifactFile
+                    case Some(artifactFile) => toFile(artifactFile)
                   }
 
                   val downloadedArtifactsPath = targetDirPath.toPath.resolve("downloadedArtifact")
@@ -421,7 +443,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
 
     Files.write(targetFilePath, Await.result(report, 50.minutes).getBytes(Charset.forName("UTF-8")))
 
-    targetFilePath.toFile
+    toFileRef(targetFilePath.toFile)
   }
 
   private def fetchFileOrUrl(filenameOrUrl: String): Future[Array[Byte]] =
@@ -451,7 +473,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
         .map { bytes =>
           import java.security.MessageDigest
           val digest = MessageDigest.getInstance("SHA-512")
-          Some((new Checksum(filename, bytes.length, digest.digest(bytes).toList), Some(bytes)))
+          Some((Checksum(filename, bytes.length, digest.digest(bytes)), Some(bytes)))
         }
         .recover {
           case s: StatusError if s.status == 404 =>

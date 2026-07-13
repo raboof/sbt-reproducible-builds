@@ -17,24 +17,22 @@
 package net.bzzt.reproduciblebuilds
 
 import sbt.librarymanagement.ScmInfo
-import sbt.{Artifact, File, ModuleID}
+import sbt.{Artifact, ModuleID}
+import sbtcompat.PluginCompat._
 
 import java.io.StringReader
-import java.math.BigInteger
-import java.nio.file.Files
-import java.security.MessageDigest
 
 import scala.collection.{immutable, mutable}
 
-case class Checksum(filename: String, length: Int, checksum: List[Byte]) {
-  def hexChecksum = checksum.map("%02x" format _).mkString
-}
+case class Checksum(filename: String, length: Long, hexChecksum: String)
 object Checksum {
-  def apply(file: File): Checksum = {
-    val bytes = Files.readAllBytes(file.toPath)
-    val digest = MessageDigest.getInstance("SHA-512")
-    new Checksum(file.getName, bytes.length, digest.digest(bytes).toList)
+  def apply(file: FileRef): Checksum = {
+    val hashStr = file.contentHashStr
+    require(hashStr.startsWith("sha256-"))
+    new Checksum(file.name(), file.sizeBytes, hashStr)
   }
+  def apply(filename: String, length: Long, checksum: Array[Byte]) =
+    new Checksum(filename, length, checksum.map("%02x" format _).mkString)
 }
 
 case class Certification(
@@ -93,7 +91,7 @@ object Certification {
       packageName: String,
       packageVersion: String,
       scmInfo: Option[ScmInfo],
-      packagedArtifacts: Map[Artifact, File],
+      packagedArtifacts: Map[Artifact, FileRef],
       libraryDependencies: Seq[ModuleID],
       scalaVersion: String,
       scalaBinaryVersion: String,
@@ -126,7 +124,10 @@ object Certification {
       scalaBinaryVersion,
       sbtVersion,
       checksums,
-      artifacts.values.map(_.lastModified()).max
+      sys.env
+        .get("SOURCE_DATE_EPOCH")
+        .map(_.toLong * 1000)
+        .getOrElse(new java.util.Date().getTime)
     )
   }
 
@@ -147,11 +148,7 @@ object Certification {
         val filename = properties.getProperty(keys.find(_.endsWith(".filename")).get)
         val length = Integer.parseInt(properties.getProperty(keys.find(_.endsWith(".length")).get))
         val checksum = properties.getProperty(keys.find(_.endsWith(".checksums.sha512")).get)
-        val bs = new BigInteger(checksum, 16).toByteArray.toList.reverse
-          .padTo[Byte, List[Byte]](64, Byte.box(0x00))
-          .take(64)
-          .reverse
-        Checksum(filename, length, bs)
+        Checksum(filename, length, checksum)
       }
 
     val ScalacPluginLine = "scala\\.compiler\\.plugins\\.(\\d+)".r

@@ -125,20 +125,6 @@ private[reproduciblebuilds] object SbtLibraryManagementFunctions {
       .withDependencies(ic.dependencies.map(propagateCrossVersion))
       .withOverrides(ic.overrides map applyCross)
   }
-  def newConfiguredModuleID(module: ModuleID, moduleInfo: ModuleInfo, configurations: Iterable[Configuration]) = {
-    val mod = new DefaultModuleDescriptor(toID(module), "release", null, false)
-    mod.setLastModified(System.currentTimeMillis)
-    mod.setDescription(moduleInfo.description)
-    moduleInfo.homepage foreach { h =>
-      mod.setHomePage(h.toString)
-    }
-    moduleInfo.licenses foreach { l =>
-      mod.addLicense(new License(l._1, l._2.toString))
-    }
-    addConfigurations(mod, configurations)
-    addArtifacts(mod, module.explicitArtifacts)
-    mod
-  }
 
   def appendSbtCrossVersion(ic: InlineConfiguration): InlineConfiguration =
     ic.withModule(appendSbtCrossVersion(ic.module))

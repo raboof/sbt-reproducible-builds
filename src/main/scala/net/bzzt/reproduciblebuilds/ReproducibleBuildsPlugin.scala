@@ -30,7 +30,7 @@ import sbt.{io => _, _}
 import spray.json._
 
 import java.net.InetAddress
-import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -98,7 +98,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       targetFilename(certification.artifactId, certification.version, certification.classifier)
     )
 
-    Files.write(targetFilePath, certification.asPropertyString.getBytes(Charset.forName("UTF-8")))
+    Files.write(targetFilePath, certification.asPropertyString.getBytes(StandardCharsets.UTF_8))
 
     targetFilePath.toFile
   }
@@ -419,7 +419,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
 
     val targetFilePath = targetDirPath.toPath.resolve("reproducible-builds-report.md")
 
-    Files.write(targetFilePath, Await.result(report, 50.minutes).getBytes(Charset.forName("UTF-8")))
+    Files.write(targetFilePath, Await.result(report, 50.minutes).getBytes(StandardCharsets.UTF_8))
 
     targetFilePath.toFile
   }

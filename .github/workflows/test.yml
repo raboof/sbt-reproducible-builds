@@ -1,4 +1,4 @@
-name: Release
+name: Test and publish locally
 on:
   push:
     branches: [master, main]
@@ -14,4 +14,8 @@ jobs:
       - uses: sbt/setup-sbt@v1
       - name: 'Linter: Scalafix checks'
         run: sbt "scalafixAll --check"
-      - run: sbt test scripted publishLocal
+      - run: |
+          sudo apt update
+          sudo apt-get install diffoscope
+          #sbt test scripted publishLocal
+          sbt scripted

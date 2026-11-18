@@ -422,8 +422,8 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
                     val cmd = s"diffoscope --html-dir $diffoscopeOutputDir $ourArtifact $downloadedArtifact"
                     new ProcessBuilder(
                       "diffoscope",
-                      //"--html-dir",
-                      //diffoscopeOutputDir.toFile.getAbsolutePath,
+                      "--html-dir",
+                      diffoscopeOutputDir.toFile.getAbsolutePath,
                       ourArtifact.getAbsolutePath,
                       downloadedArtifact.toFile.getAbsolutePath
                     ).start().waitFor()

@@ -249,9 +249,9 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
 
     },
     ivyConfigurations += ReproducibleBuilds
-    // ) ++ (
-    //  if (universalPluginOnClasspath) SbtNativePackagerHelpers.settings
-    //  else Seq.empty
+  ) ++ (
+    if (universalPluginOnClasspath) SbtNativePackagerHelpers.settings
+    else Seq.empty
   ) ++ inConfig(ReproducibleBuilds)(
     Seq(
       packagedArtifacts := Def.uncached {

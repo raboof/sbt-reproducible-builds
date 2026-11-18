@@ -3,13 +3,12 @@ package net.bzzt.reproduciblebuilds
 import org.apache.ivy.core.module.descriptor.{
   Artifact => IArtifact,
   DefaultModuleDescriptor,
-  License,
   MDArtifact,
   ModuleDescriptor
 }
 import org.apache.ivy.core.module.id.ModuleRevisionId
 import sbt.librarymanagement.ScalaModuleInfo
-import sbt.{Artifact, ConfigRef, Configuration, CrossVersion, ExclusionRule, InlineConfiguration, ModuleID, ModuleInfo}
+import sbt.{Artifact, ConfigRef, Configuration, CrossVersion, ExclusionRule, InlineConfiguration, ModuleID}
 
 /** These functions where copied from sbt-library-management (see https://github.com/sbt/librarymanagement) since they
   * are package private. I
@@ -124,20 +123,6 @@ private[reproduciblebuilds] object SbtLibraryManagementFunctions {
     ic.withModule(applyCross(ic.module))
       .withDependencies(ic.dependencies.map(propagateCrossVersion))
       .withOverrides(ic.overrides map applyCross)
-  }
-  def newConfiguredModuleID(module: ModuleID, moduleInfo: ModuleInfo, configurations: Iterable[Configuration]) = {
-    val mod = new DefaultModuleDescriptor(toID(module), "release", null, false)
-    mod.setLastModified(System.currentTimeMillis)
-    mod.setDescription(moduleInfo.description)
-    moduleInfo.homepage foreach { h =>
-      mod.setHomePage(h.toString)
-    }
-    moduleInfo.licenses foreach { l =>
-      mod.addLicense(new License(l._1, l._2.toString))
-    }
-    addConfigurations(mod, configurations)
-    addArtifacts(mod, module.explicitArtifacts)
-    mod
   }
 
   def appendSbtCrossVersion(ic: InlineConfiguration): InlineConfiguration =

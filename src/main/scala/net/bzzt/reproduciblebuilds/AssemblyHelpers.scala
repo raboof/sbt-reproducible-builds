@@ -20,6 +20,7 @@ import sbt.Keys._
 import sbt._
 import sbtassembly.AssemblyPlugin
 import sbtassembly.AssemblyPlugin.autoImport.{Assembly => _, baseAssemblySettings => _, _}
+import sbtcompat.PluginCompat._
 
 object AssemblyHelpers {
   val plugin: Plugins.Basic = AssemblyPlugin
@@ -29,13 +30,15 @@ object AssemblyHelpers {
       assembly := {
         val log = streams.value.log
         val jar = assembly.value
-        val options = (assemblyOption in assembly).value
+        val options = (assembly / assemblyOption).value
 
         if (options.prependShellScript.isDefined) {
           log.warn("Cannot make assembly reproducible when prependShellScript is set")
           jar
-        } else
-          ReproducibleBuildsPlugin.postProcessJar(jar)
+        } else {
+          implicit val conv: xsbti.FileConverter = fileConverter.value
+          toFileRef(ReproducibleBuildsPlugin.postProcessJar(toFile(jar)))
+        }
       }
     )
 }

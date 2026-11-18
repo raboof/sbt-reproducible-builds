@@ -32,7 +32,7 @@ name := "sbt-reproducible-builds"
 (pluginCrossBuild / sbtVersion) := {
   scalaBinaryVersion.value match {
     case "2.12" => "1.12.9"
-    case _      => "2.0.2"
+    case _      => "2.1.0"
   }
 }
 addSbtPlugin("com.github.sbt" % "sbt2-compat" % "0.2.0")

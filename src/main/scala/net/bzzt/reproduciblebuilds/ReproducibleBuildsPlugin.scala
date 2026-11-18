@@ -472,7 +472,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       fetchFileOrUrl(publishedArtifactUrl)
         .map { bytes =>
           import java.security.MessageDigest
-          val digest = MessageDigest.getInstance("SHA-512")
+          val digest = MessageDigest.getInstance("SHA-256")
           Some((Checksum(filename, bytes.length, digest.digest(bytes)), Some(bytes)))
         }
         .recover {

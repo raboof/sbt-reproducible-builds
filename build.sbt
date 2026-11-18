@@ -51,6 +51,7 @@ libraryDependencies += Defaults.sbtPluginExtra("com.eed3si9n" %% "sbt-assembly" 
 libraryDependencies += "net.bzzt" % "reproducible-builds-jvm-stripper" % "0.10"
 libraryDependencies += "io.spray" %% "spray-json" % "1.3.6"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.20" % "test"
+
 scriptedLaunchOpts :=
   scriptedLaunchOpts.value ++
     Seq("-Xmx1024M", "-Dplugin.version=" + version.value)

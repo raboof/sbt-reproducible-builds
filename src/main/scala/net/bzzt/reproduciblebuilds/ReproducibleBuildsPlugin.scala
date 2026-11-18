@@ -44,9 +44,6 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
   val universalPluginOnClasspath =
     Try(getClass.getClassLoader.loadClass("com.typesafe.sbt.packager.universal.UniversalPlugin")).isSuccess
 
-  val gpgPluginOnClasspath =
-    Try(getClass.getClassLoader.loadClass("io.crashbox.gpg.SbtGpg")).isSuccess
-
   override def requires: Plugins = JvmPlugin
 
   val ReproducibleBuilds = config("reproducibleBuilds")
@@ -276,8 +273,12 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
           )
         }
       }
+<<<<<<< Updated upstream
       // publishTo := Some(bzztNetResolver)
     ) ++ gpgPluginSettings ++ Seq(
+=======
+    ) ++ Seq(
+>>>>>>> Stashed changes
       publishConfiguration := Def.uncached {
         implicit val converter: xsbti.FileConverter = fileConverter.value
         val artifacts = packagedArtifacts.value.toVector.map { case (a, vf) =>
@@ -340,11 +341,6 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
 
   private def showResult(log: Logger, result: VerificationResult): Unit =
     log.info(result.asMarkdown)
-
-  private def gpgPluginSettings =
-    // if (gpgPluginOnClasspath) GpgHelpers.settings
-    // else Seq.empty
-    Seq.empty
 
   def postProcessJar(jar: File): File = postProcessWith(
     jar,

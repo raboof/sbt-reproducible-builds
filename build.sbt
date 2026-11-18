@@ -41,8 +41,6 @@ libraryDependencies += Defaults.sbtPluginExtra("com.github.sbt" %% "sbt-native-p
                                                (pluginCrossBuild / sbtBinaryVersion).value,
                                                scalaBinaryVersion.value
 )
-// TODO
-// addSbtPlugin("io.crashbox" %% "sbt-gpg" % "0.2.1" % Provided),
 libraryDependencies += Defaults.sbtPluginExtra("com.eed3si9n" %% "sbt-assembly" % "2.3.1" % Provided,
                                                (pluginCrossBuild / sbtBinaryVersion).value,
                                                scalaBinaryVersion.value

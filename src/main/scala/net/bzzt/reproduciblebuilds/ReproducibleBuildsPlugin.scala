@@ -273,12 +273,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
           )
         }
       }
-<<<<<<< Updated upstream
-      // publishTo := Some(bzztNetResolver)
-    ) ++ gpgPluginSettings ++ Seq(
-=======
     ) ++ Seq(
->>>>>>> Stashed changes
       publishConfiguration := Def.uncached {
         implicit val converter: xsbti.FileConverter = fileConverter.value
         val artifacts = packagedArtifacts.value.toVector.map { case (a, vf) =>

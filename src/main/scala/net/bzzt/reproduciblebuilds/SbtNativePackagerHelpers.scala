@@ -20,6 +20,7 @@ import com.typesafe.sbt.packager.universal.UniversalPlugin
 import com.typesafe.sbt.packager.universal.UniversalPlugin.autoImport._
 import sbt.Keys._
 import sbt._
+import sbtcompat.PluginCompat._
 
 import ReproducibleBuildsPlugin.reproducibleBuildsStrip
 
@@ -37,14 +38,11 @@ object SbtNativePackagerHelpers {
   val plugin: Plugins.Basic = UniversalPlugin
 
   val settings: Seq[Setting[_]] = Seq(
-    Universal / packageBin := {
+    (Universal / packageBin) := Def.uncached {
       (Universal / packageBin).?.value match {
         case Some(zip) =>
-          if (reproducibleBuildsStrip.value) {
-            ReproducibleBuildsPlugin.postProcessZip(zip)
-          } else {
-            zip
-          }
+          implicit val conv: xsbti.FileConverter = fileConverter.value
+          toFileRef(ReproducibleBuildsPlugin.postProcessZip(toFile(zip)))
         case None =>
           throw new IllegalStateException(
             "Reference to undefined setting: packageBin in Universal. " +

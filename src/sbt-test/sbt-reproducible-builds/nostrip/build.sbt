@@ -6,6 +6,8 @@ organization := "net.bzzt"
 
 scalaVersion := "3.10.1"
 
+ThisBuild / publishTo := Some(MavenCache("local-maven", file("/tmp")))
+
 enablePlugins(ReproducibleBuildsPlugin)
 
 reproducibleBuildsStrip := false

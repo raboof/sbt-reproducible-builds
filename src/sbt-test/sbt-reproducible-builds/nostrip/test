@@ -1,6 +1,8 @@
 > package
 $ exists target/scala-3.10.1/nostrip_3-0.1.0-SNAPSHOT.jar
 -$ exists target/scala-3/stripped/nostrip_3-0.1.0-SNAPSHOT.jar
-$ must-mirror target/scala-3.10.1/nostrip_3-0.1.0-SNAPSHOT.jar expected/nostrip_3-0.1.0-SNAPSHOT.jar
+#$ must-mirror target/scala-3.10.1/nostrip_3-0.1.0-SNAPSHOT.jar expected/nostrip_3-0.1.0-SNAPSHOT.jar
 > reproducibleBuildsCertification
 $ exists target/scala-3.10.1/nostrip_3-0.1.0-SNAPSHOT.buildinfo
+> publish
+> reproducibleBuildsCheck

@@ -1,0 +1,6 @@
+> package
+$ exists target/scala-2.13/nostrip_2.13-0.1.0-SNAPSHOT.jar
+-$ exists target/scala-2.13/stripped/nostrip_2.13-0.1.0-SNAPSHOT.jar
+$ must-mirror target/scala-2.13/nostrip_2.13-0.1.0-SNAPSHOT.jar expected/nostrip_2.13-0.1.0-SNAPSHOT.jar
+> reproducibleBuildsCertification
+$ exists target/scala-2.13/nostrip_2.13-0.1.0-SNAPSHOT.buildinfo

@@ -22,22 +22,28 @@ import sbtassembly.AssemblyPlugin
 import sbtassembly.AssemblyPlugin.autoImport.{Assembly => _, baseAssemblySettings => _, _}
 import sbtcompat.PluginCompat._
 
+import ReproducibleBuildsPlugin.reproducibleBuildsStrip
+
 object AssemblyHelpers {
   val plugin: Plugins.Basic = AssemblyPlugin
 
   val settings: Seq[Setting[_]] =
     Seq(
       assembly := {
-        val log = streams.value.log
-        val jar = assembly.value
-        val options = (assembly / assemblyOption).value
-
-        if (options.prependShellScript.isDefined) {
-          log.warn("Cannot make assembly reproducible when prependShellScript is set")
-          jar
+        if (!reproducibleBuildsStrip.value) {
+          assembly.value
         } else {
-          implicit val conv: xsbti.FileConverter = fileConverter.value
-          toFileRef(ReproducibleBuildsPlugin.postProcessJar(toFile(jar)))
+          val log = streams.value.log
+          val jar = assembly.value
+          val options = (assembly / assemblyOption).value
+
+          if (options.prependShellScript.isDefined) {
+            log.warn("Cannot make assembly reproducible when prependShellScript is set")
+            jar
+          } else {
+            implicit val conv: xsbti.FileConverter = fileConverter.value
+            toFileRef(ReproducibleBuildsPlugin.postProcessJar(toFile(jar)))
+          }
         }
       }
     )

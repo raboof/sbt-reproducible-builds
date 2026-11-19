@@ -49,6 +49,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
   val ReproducibleBuilds = config("reproducibleBuilds")
 
   val reproducibleBuildsPackageName = settingKey[String]("Module name of this build")
+  val reproducibleBuildsStrip = settingKey[Boolean]("Whether to post-process generated artifacts")
   val publishCertification = settingKey[Boolean]("Include the certification when publishing")
   val hostname = settingKey[String]("The hostname to include when publishing 3rd-party attestations")
 
@@ -175,9 +176,14 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     hostname := InetAddress.getLocalHost.getHostName,
     Compile / packageBin := Def.uncached {
       implicit val conv: xsbti.FileConverter = fileConverter.value
-      toFileRef(postProcessJar(toFile((Compile / packageBin).value)))
+      if (reproducibleBuildsStrip.value) {
+        toFileRef(postProcessJar(toFile((Compile / packageBin).value)))
+      } else {
+        (Compile / packageBin).value
+      }
     },
     reproducibleBuildsPackageName := moduleName.value,
+    reproducibleBuildsStrip := true,
     reproducibleBuildsCertification := Def.uncached(ourCertificationFile.value),
     ReproducibleBuilds / artifact := {
       val name =

@@ -21,6 +21,8 @@ import com.typesafe.sbt.packager.universal.UniversalPlugin.autoImport._
 import sbt.Keys._
 import sbt._
 
+import ReproducibleBuildsPlugin.reproducibleBuildsStrip
+
 /** Helper code for sbt-native-packager integration.
   *
   * The main ReproducibleBuildsPlugin code should not rely on any sbt-native-packager code, since this plugin should be
@@ -35,10 +37,14 @@ object SbtNativePackagerHelpers {
   val plugin: Plugins.Basic = UniversalPlugin
 
   val settings: Seq[Setting[_]] = Seq(
-    packageBin in Universal := {
-      (packageBin in Universal).?.value match {
+    Universal / packageBin := {
+      (Universal / packageBin).?.value match {
         case Some(zip) =>
-          ReproducibleBuildsPlugin.postProcessZip(zip)
+          if (reproducibleBuildsStrip.value) {
+            ReproducibleBuildsPlugin.postProcessZip(zip)
+          } else {
+            zip
+          }
         case None =>
           throw new IllegalStateException(
             "Reference to undefined setting: packageBin in Universal. " +

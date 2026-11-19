@@ -4,7 +4,7 @@ import net.bzzt.reproduciblebuilds.ReproducibleBuildsPlugin.reproducibleBuildsSt
 name := "nostrip"
 organization := "net.bzzt"
 
-scalaVersion := "2.13.18"
+scalaVersion := "3.10.1"
 
 enablePlugins(ReproducibleBuildsPlugin)
 

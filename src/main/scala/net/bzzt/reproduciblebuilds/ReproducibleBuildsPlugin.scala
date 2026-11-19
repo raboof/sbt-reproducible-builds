@@ -18,7 +18,6 @@ package net.bzzt.reproduciblebuilds
 
 import gigahorse.{GigahorseSupport, StatusError}
 import io.github.zlika.reproducible._
-import org.apache.ivy.core.IvyPatternHelper
 import sbt.Classpaths._
 import sbt.Keys._
 import sbt.io.syntax.{URI, uri}
@@ -101,15 +100,6 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     toFileRef(targetFilePath.toFile)
   }
 
-  case class SubstituteInfo(
-      organization: String,
-      packageName: String,
-      version: String,
-      crossPaths: Boolean,
-      sbtPlugin: Boolean,
-      scalaBinaryVersion: String,
-      sbtVersion: String
-  )
   lazy val substituteInfo = Def.task[SubstituteInfo] {
     SubstituteInfo(
       organization.value.replace('.', '/'),
@@ -123,30 +113,28 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
   }
 
   def substitutePattern(pattern: String, ext: String, classifier: Option[String], info: SubstituteInfo) = {
-    import scala.collection.JavaConverters._
     val extraModuleAttributes = {
       (if (info.crossPaths) Map("scalaVersion" -> info.scalaBinaryVersion) else Map.empty) ++
         (if (info.sbtPlugin) Map("sbtVersion" -> info.sbtVersion) else Map.empty) ++
         (classifier.map(c => ("classifier", c)).toMap)
-    }.asJava
+    }
 
-    IvyPatternHelper.substitute(
+    UrlUtils.substitute(
       pattern,
-      info.organization,
-      info.packageName,
-      info.version,
-      info.packageName,
+      info,
       ext,
       ext,
       Compile.name,
       extraModuleAttributes,
-      null
     )
   }
 
   def artifactUrl(resolver: Resolver, ext: String, classifier: Option[String], info: SubstituteInfo): String = {
-    import SbtLibraryManagementFunctions._
-
+    def resolvePattern(base: String, pattern: String): String = {
+      val normBase = base.replace('\\', '/')
+      if (normBase.endsWith("/") || pattern.startsWith("/")) normBase + pattern
+      else normBase + "/" + pattern
+    }
     resolver match {
       case repository: MavenRepository =>
         val pattern = resolvePattern(

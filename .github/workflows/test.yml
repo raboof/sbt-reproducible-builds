@@ -14,7 +14,4 @@ jobs:
       - uses: sbt/setup-sbt@v1
       - name: 'Linter: Scalafix checks'
         run: sbt "scalafixAll --check"
-      - run: |
-          sudo apt update
-          sudo apt install diffoscope
-          sbt test scripted publishLocal
+      - run: sbt test scripted publishLocal

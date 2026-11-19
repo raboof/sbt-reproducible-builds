@@ -35,6 +35,10 @@ name := "sbt-reproducible-builds"
     case _      => "2.1.0"
   }
 }
+scriptedSbt := (scalaBinaryVersion.value match {
+  case "2.12" => "1.13.1"
+  case _      => "2.1.0"
+})
 addSbtPlugin("com.github.sbt" % "sbt2-compat" % "0.2.0")
 // Optional integration:
 libraryDependencies += Defaults.sbtPluginExtra("com.github.sbt" %% "sbt-native-packager" % "1.11.7" % Provided,

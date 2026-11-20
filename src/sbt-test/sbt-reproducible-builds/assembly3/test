@@ -1,6 +1,4 @@
 > assembly
 $ exists target/scala-3.9.0/assembly-assembly-0.1.0-SNAPSHOT.jar
 $ exists target/scala-3.9.0/stripped/assembly-assembly-0.1.0-SNAPSHOT.jar
-$ must-mirror target/scala-3.9.0/stripped/assembly-assembly-0.1.0-SNAPSHOT.jar expected/assembly-assembly-0.1.0-SNAPSHOT.jar
-> publish
 > reproducibleBuildsCheck

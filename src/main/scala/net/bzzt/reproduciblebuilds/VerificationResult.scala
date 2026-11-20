@@ -63,7 +63,12 @@ case class VerificationResult(
       else Mismatch(ourSum, checksum, bytes)
   }
 
-  def ok = ourSums == remoteSums
+  // This is conservative: not all local artifacts
+  // are necessarily published, and in those cases a
+  // `MissingInTheirs` verdict might actually be fine.
+  // For now prefer 'report' over 'check' for such
+  // builds.
+  def ok = verdicts.forall(_._2 == Match)
 }
 
 object VerificationResult {

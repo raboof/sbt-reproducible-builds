@@ -1,5 +1,5 @@
 > package
-$ exists target/scala-2.12/stripped/simple_2.12-0.1.0-SNAPSHOT.jar
+$ exists target/**/stripped/simple_*-0.1.0-SNAPSHOT.jar
 > reproducibleBuildsCertification
-$ exists target/scala-2.12/simple_2.12-0.1.0-SNAPSHOT.buildinfo
+$ exists target/**/simple_*-0.1.0-SNAPSHOT.buildinfo
 > reproducibleBuildsCheck

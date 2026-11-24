@@ -1,6 +1,6 @@
 > package
-$ exists target/scala-3.10.1/nostrip_3-0.1.0-SNAPSHOT.jar
--$ exists target/scala-3/stripped/nostrip_3-0.1.0-SNAPSHOT.jar
+$ exists target/**/nostrip_3-0.1.0-SNAPSHOT.jar
+-$ exists target/**/stripped/nostrip_3-0.1.0-SNAPSHOT.jar
 > reproducibleBuildsCertification
-$ exists target/scala-3.10.1/nostrip_3-0.1.0-SNAPSHOT.buildinfo
+$ exists target/**/nostrip_3-0.1.0-SNAPSHOT.buildinfo
 > reproducibleBuildsCheck

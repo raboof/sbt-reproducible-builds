@@ -20,6 +20,10 @@ This is a pre-1.0 version: you are welcome to use it, but there are no
 guarantees, and syntax, behaviour and default configuration may still change
 in future versions.
 
+There is basic sbt2 support: sbt-reproducible-builds itself is cross-built
+to sbt1 and sbt2. In theory it should be able to validate both sbt1 and
+sbt2 builds, but more testing is needed, and specific bug reports welcome.
+
 ## Usage
 
 ### Stripping nondeterminism from artifacts

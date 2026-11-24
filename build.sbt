@@ -22,6 +22,7 @@ lazy val scala212 = "2.12.21"
 // sbt 2.1.0 is published against 3.9.0, so we need to align with that
 lazy val scala3 = "3.9.0"
 ThisBuild / crossScalaVersions := Seq(scala212, scala3)
+ThisBuild / scalaVersion := crossScalaVersions.value.head
 
 enablePlugins(ReproducibleBuildsPlugin)
 
@@ -35,13 +36,17 @@ name := "sbt-reproducible-builds"
     case _      => "2.1.0"
   }
 }
+scriptedSbt := (scalaBinaryVersion.value match {
+  case "2.12" => "1.13.1"
+  case _      => "2.1.0"
+})
 addSbtPlugin("com.github.sbt" % "sbt2-compat" % "0.2.0")
 // Optional integration:
 libraryDependencies += Defaults.sbtPluginExtra("com.github.sbt" %% "sbt-native-packager" % "1.11.7" % Provided,
                                                (pluginCrossBuild / sbtBinaryVersion).value,
                                                scalaBinaryVersion.value
 )
-libraryDependencies += Defaults.sbtPluginExtra("com.eed3si9n" %% "sbt-assembly" % "2.3.1" % Provided,
+libraryDependencies += Defaults.sbtPluginExtra("com.eed3si9n" %% "sbt-assembly" % "2.5.0" % Provided,
                                                (pluginCrossBuild / sbtBinaryVersion).value,
                                                scalaBinaryVersion.value
 )
@@ -68,3 +73,5 @@ inThisBuild(
 
 addCommandAlias("applyCodeStyle", ";+clean ;scalafixAll ;scalafmtAll; scalafmtSbt")
 addCommandAlias("checkCodeStyle", ";+clean ;scalafixAll --check ;scalafmtCheckAll; scalafmtSbtCheck")
+
+//scriptedLaunchOpts += "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"

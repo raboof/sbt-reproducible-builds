@@ -10,4 +10,4 @@ enablePlugins(ReproducibleBuildsPlugin)
 
 reproducibleBuildsStrip := false
 
-ThisBuild / publishTo := Some(MavenCache("local-maven", file("expected")))
+ThisBuild / publishTo := Some(MavenCache("local-maven", file(s"expected_${sbtBinaryVersion.value}")))

@@ -1,4 +1,4 @@
 > assembly
-$ exists target/scala-3.9.0/assembly-assembly-0.1.0-SNAPSHOT.jar
-$ exists target/scala-3.9.0/stripped/assembly-assembly-0.1.0-SNAPSHOT.jar
+$ exists target/**/assembly-assembly-0.1.0-SNAPSHOT.jar
+$ exists target/**/stripped/assembly-assembly-0.1.0-SNAPSHOT.jar
 > reproducibleBuildsCheck

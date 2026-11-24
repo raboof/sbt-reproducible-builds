@@ -7,4 +7,4 @@ private[reproduciblebuilds] object SbtLibraryManagementFunctions {
     val normBase = base.replace('\\', '/')
     if normBase.endsWith("/") || pattern.startsWith("/") then normBase + pattern
     else normBase + "/" + pattern
-} 
+}

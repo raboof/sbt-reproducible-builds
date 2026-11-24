@@ -32,9 +32,9 @@ object UrlUtils {
       pat.contains("[organisation]") && !pat.trim.startsWith("http")
 
   private def mavenModuleArtifactId(
-                             moduleName: String,
-                             info: SubstituteInfo,
-                           ): String =
+      moduleName: String,
+      info: SubstituteInfo
+  ): String =
     val suffix = Vector(
       Option.when(info.crossPaths)(info.scalaBinaryVersion),
       Option.when(info.sbtPlugin)(info.sbtVersion)
@@ -42,10 +42,14 @@ object UrlUtils {
     if suffix.isEmpty || moduleName.endsWith(suffix) then moduleName else moduleName + suffix
 
   // loosely based on sbt's GenericPublisher.publish 89
-  def artifactUrl(target: Resolver, `type`: String, ext: String, classifier: Option[String], info: SubstituteInfo): String = {
+  def artifactUrl(target: Resolver,
+                  `type`: String,
+                  ext: String,
+                  classifier: Option[String],
+                  info: SubstituteInfo
+  ): String =
     target match {
-      case urlRepo: URLRepository
-        if urlRepo.patterns.isMavenCompatible && !isFilePatterned(urlRepo) =>
+      case urlRepo: URLRepository if urlRepo.patterns.isMavenCompatible && !isFilePatterned(urlRepo) =>
         val pat = urlRepo.patterns.artifactPatterns.headOption.getOrElse(
           sys.error("URLRepository has no artifact pattern")
         )
@@ -55,7 +59,7 @@ object UrlUtils {
           info,
           pat.substring(0, idx),
           ext,
-          classifier,
+          classifier
         )
       case urlRepo: URLRepository if !isFilePatterned(urlRepo) =>
         ivyless(
@@ -63,7 +67,7 @@ object UrlUtils {
           `type`,
           ext,
           classifier,
-          urlRepo,
+          urlRepo
         )
       case fileRepo: FileRepository =>
         ivylessFile(
@@ -71,7 +75,7 @@ object UrlUtils {
           fileRepo,
           `type`,
           ext,
-          classifier,
+          classifier
         )
       case pbr: PatternsBasedRepository if isFilePatterned(pbr) =>
         // File repo detected by pattern (e.g. scripted classloader makes type match fail)
@@ -80,13 +84,13 @@ object UrlUtils {
           pat.substring(0, pat.indexOf("[organisation]")).replace('\\', '/').stripSuffix("/")
         val repoDir =
           (if baseStr.startsWith("file:") then new File(new java.net.URI(baseStr))
-          else new File(baseStr)).getAbsoluteFile
+           else new File(baseStr)).getAbsoluteFile
         if pbr.patterns.isMavenCompatible then
           ivylessMavenFile(
             info,
             repoDir,
             ext,
-            classifier,
+            classifier
           )
         else
           ivylessLocal(
@@ -94,14 +98,14 @@ object UrlUtils {
             repoDir,
             `type`,
             ext,
-            classifier,
+            classifier
           )
       case mavenCache: MavenCache =>
         ivylessMavenFile(
           info,
           mavenCache.rootFile,
           ext,
-          classifier,
+          classifier
         )
       case mavenRepo: MavenRepo =>
         val root = mavenRepo.root.stripSuffix("/")
@@ -127,19 +131,23 @@ object UrlUtils {
       case other =>
         throw new IllegalArgumentException(s"Not yet implemented: $other")
     }
-  }
 
   // from sbt's typeToFolder 210
   private def typeToFolder(tpe: String): String = tpe match
-    case "jar" => "jars"
-    case "src" | "source" | "sources" => "srcs"
+    case "jar"                                   => "jars"
+    case "src" | "source" | "sources"            => "srcs"
     case "doc" | "docs" | "javadoc" | "javadocs" => "docs"
-    case "pom" => "poms"
-    case "ivy" => "ivys"
-    case other => other + "s"
+    case "pom"                                   => "poms"
+    case "ivy"                                   => "ivys"
+    case other                                   => other + "s"
 
   // from sbt's ivylessPublishLocal 222
-  private def ivylessLocal(info: SubstituteInfo, localRepoBase: File, `type`: String, extension: String, classifier: Option[String]) =
+  private def ivylessLocal(info: SubstituteInfo,
+                           localRepoBase: File,
+                           `type`: String,
+                           extension: String,
+                           classifier: Option[String]
+  ) =
     val org = info.organization
     val moduleName = info.packageName
     val version = info.version
@@ -158,17 +166,17 @@ object UrlUtils {
 
   // from sbt 272
   private def substituteIvyArtifactPattern(
-                                            pattern: String,
-                                            org: String,
-                                            moduleName: String,
-                                            version: String,
-                                            typeFolder: String,
-                                            artifactName: String,
-                                            classifier: String,
-                                            ext: String,
-                                            scalaV: Option[String],
-                                            sbtV: Option[String]
-                                          ): String =
+      pattern: String,
+      org: String,
+      moduleName: String,
+      version: String,
+      typeFolder: String,
+      artifactName: String,
+      classifier: String,
+      ext: String,
+      scalaV: Option[String],
+      sbtV: Option[String]
+  ): String =
     var s = pattern
     s = s.replace("[organisation]", org)
     s = s.replace("[module]", moduleName)
@@ -192,7 +200,12 @@ object UrlUtils {
   end substituteIvyArtifactPattern
 
   // loosely based on sbt's ivylessPublish 392
-  private def ivyless(info: SubstituteInfo, `type`: String, extension: String, classifier: Option[String], urlRepo: URLRepository) =
+  private def ivyless(info: SubstituteInfo,
+                      `type`: String,
+                      extension: String,
+                      classifier: Option[String],
+                      urlRepo: URLRepository
+  ) =
     val folder = typeToFolder(`type`)
     val c = classifier.map("-" + _).getOrElse("")
     val artifactPattern = urlRepo.patterns.artifactPatterns.head
@@ -210,11 +223,15 @@ object UrlUtils {
     )
 
   // based on sbt's ivylessPublishToFile 466
-  private def ivylessFile(info: SubstituteInfo, fileRepo: FileRepository, `type`: String, extension: String, classifier: Option[String]) =
+  private def ivylessFile(info: SubstituteInfo,
+                          fileRepo: FileRepository,
+                          `type`: String,
+                          extension: String,
+                          classifier: Option[String]
+  ) =
     val pattern = fileRepo.patterns.artifactPatterns.head
     val baseStr =
-      if pattern.contains("[organisation]") then
-        pattern.substring(0, pattern.indexOf("[organisation]"))
+      if pattern.contains("[organisation]") then pattern.substring(0, pattern.indexOf("[organisation]"))
       else pattern
     val normalized = baseStr.replace('\\', '/').stripSuffix("/")
     val localRepoBase =
@@ -222,10 +239,8 @@ object UrlUtils {
       else new File(normalized)
     val repoDir = localRepoBase.getAbsoluteFile
     val isMavenLayout = fileRepo.patterns.isMavenCompatible
-    if isMavenLayout then
-      ivylessMavenFile(info, repoDir, extension, classifier)
-    else
-      ivylessLocal(info, repoDir, `type`, extension, classifier)
+    if isMavenLayout then ivylessMavenFile(info, repoDir, extension, classifier)
+    else ivylessLocal(info, repoDir, `type`, extension, classifier)
 
   // based on sbt's ivylessPublishMavenToFile 585
   private def ivylessMavenFile(info: SubstituteInfo, repoBase: File, extension: String, classifier: Option[String]) =
@@ -241,7 +256,7 @@ object UrlUtils {
       version,
       extension,
       classifier,
-      Some(p => mavenModuleArtifactId(p, info)),
+      Some(p => mavenModuleArtifactId(p, info))
     )
     val targetFile = new File(repoBase, path.replace('/', File.separatorChar))
     s"file:${targetFile.absolutePath}"
@@ -251,20 +266,21 @@ object UrlUtils {
     val base = baseUrl.stripSuffix("/") + "/"
     val artifactId = mavenModuleArtifactId(info.packageName, info)
     val fileVersion = Option.when(info.version.endsWith("-SNAPSHOT"))(classifier).flatten.getOrElse(info.version)
-    val path = mavenArtifact(info, artifactId, fileVersion, extension, classifier, Some(p => mavenModuleArtifactId(p, info)))
+    val path =
+      mavenArtifact(info, artifactId, fileVersion, extension, classifier, Some(p => mavenModuleArtifactId(p, info)))
     base + path
   }
 
   // 821
   private def mavenLayoutPath(
-                               groupId: String,
-                               moduleArtifactId: String,
-                               artifactName: String,
-                               version: String,
-                               fileVersion: String,
-                               extension: String,
-                               classifier: Option[String]
-                             ): String =
+      groupId: String,
+      moduleArtifactId: String,
+      artifactName: String,
+      version: String,
+      fileVersion: String,
+      extension: String,
+      classifier: Option[String]
+  ): String =
     val groupPath = groupId.replace('.', '/')
     val classifierPart = classifier.map("-" + _).getOrElse("")
     val fileName = s"$artifactName-$fileVersion$classifierPart.$extension"
@@ -277,7 +293,7 @@ object UrlUtils {
                             extension: String,
                             classifier: Option[String],
                             artifactNameCross: Option[String => String]
-                           ): String =
+  ): String =
     val artifactName = artifactNameCross.fold(info.packageName)(_(info.packageName))
     mavenLayoutPath(
       info.organization,
@@ -286,7 +302,7 @@ object UrlUtils {
       info.version,
       fileVersion,
       extension,
-      classifier,
+      classifier
     )
 
 }

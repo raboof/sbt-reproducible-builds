@@ -8,3 +8,5 @@ enablePlugins(JavaAppPackaging)
 
 // Universal plugin settings:
 maintainer := "arnout@bzzt.net"
+
+ThisBuild / publishTo := Some(MavenCache("local-maven", file("expected")))

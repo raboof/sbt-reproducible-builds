@@ -7,3 +7,5 @@ scalaVersion := "2.12.21"
 
 enablePlugins(SbtPlugin)
 enablePlugins(ReproducibleBuildsPlugin)
+
+ThisBuild / publishTo := Some(MavenCache("local-maven", file("expected")))

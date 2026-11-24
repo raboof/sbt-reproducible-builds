@@ -59,12 +59,18 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     "Use reproducibleBuildsCheck along with reproducibleBuildsCheckResolver := Resolver.DefaultMavenRepository"
   )
   val reproducibleBuildsCheckMavenCentral =
-    taskKey[FileRef]("Compare Reproducible Build certifications against those published on Maven Central")
+    taskKey[FileRef]("Check Reproducible Build certifications and artifacts against those published on Maven Central")
   val reproducibleBuildsCheck =
-    taskKey[FileRef]("Compare Reproducible Build certifications against those published on Maven Central")
+    taskKey[FileRef]("Check Reproducible Build certifications and artifacts against those published")
   val reproducibleBuildsCheckResolver = taskKey[Resolver](
     "Which repository to check build certifications against. Defaults to publishTo or Maven if its not defined"
   )
+  val reproducibleBuildsReportMavenCentral =
+    taskKey[FileRef](
+      "Report on Reproducible Build certifications and artifacts compared against those published on Maven Central"
+    )
+  val reproducibleBuildsReport =
+    taskKey[FileRef]("Report on Reproducible Build certifications and artifacts compared against those published")
 
   @transient
   lazy val ourCertification = Def.task[Certification] {
@@ -205,7 +211,8 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
         .taskDyn(
           reproducibleBuildsCheckImpl(
             reproducibleBuildsCheckResolver.value,
-            substituteInfo.value
+            substituteInfo.value,
+            true
           )
         )
         .value
@@ -215,7 +222,30 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
         .taskDyn(
           reproducibleBuildsCheckImpl(
             Resolver.DefaultMavenRepository,
-            substituteInfo.value
+            substituteInfo.value,
+            true
+          )
+        )
+        .value
+    },
+    reproducibleBuildsReport := Def.uncached {
+      Def
+        .taskDyn(
+          reproducibleBuildsCheckImpl(
+            reproducibleBuildsCheckResolver.value,
+            substituteInfo.value,
+            false
+          )
+        )
+        .value
+    },
+    reproducibleBuildsReportMavenCentral := Def.uncached {
+      Def
+        .taskDyn(
+          reproducibleBuildsCheckImpl(
+            Resolver.DefaultMavenRepository,
+            substituteInfo.value,
+            false
           )
         )
         .value
@@ -362,86 +392,92 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     out
   }
 
-  private def reproducibleBuildsCheckImpl(resolver: Resolver, info: SubstituteInfo) = Def.task {
-    val url = artifactUrl(resolver, "buildinfo", None, info)
+  private def reproducibleBuildsCheckImpl(resolver: Resolver, info: SubstituteInfo, failOnMismatch: Boolean) =
+    Def.task {
+      val url = artifactUrl(resolver, "buildinfo", None, info)
 
-    val log = streams.value.log
-    log.info(s"Downloading certification from [$url]")
-    val targetDirPath = crossTarget.value
-    implicit val conv: xsbti.FileConverter = fileConverter.value
+      val log = streams.value.log
+      log.info(s"Downloading certification from [$url]")
+      val targetDirPath = crossTarget.value
+      implicit val conv: xsbti.FileConverter = fileConverter.value
 
-    val ourArtifacts = (Compile / packagedArtifacts).value
-    val ourArtifactFilesByFilename = ourArtifacts.map { case (_, file) => (file.name, file) }.toMap
-    val publishedUrlByFilename = (Compile / packagedArtifacts)
-      .map(m => m.keys.map(a => (m(a).name, artifactUrl(resolver, a.extension, a.classifier, info))))
-      .value
-      .toMap
+      val ourArtifacts = (Compile / packagedArtifacts).value
+      val ourArtifactFilesByFilename = ourArtifacts.map { case (_, file) => (file.name, file) }.toMap
+      val publishedUrlByFilename = (Compile / packagedArtifacts)
+        .map(m => m.keys.map(a => (m(a).name, artifactUrl(resolver, a.extension, a.classifier, info))))
+        .value
+        .toMap
 
-    val report: Future[String] =
-      checkArtifactChecksums(ourCertification.value, uri(url), publishedUrlByFilename)
-        .flatMap { result =>
-          showResult(log, result)
-          Future
-            .sequence {
-              result.verdicts
-                .collect { case (filename: String, mismatch: Mismatch) =>
-                  val mavenArtifactUrl = publishedUrlByFilename(filename)
+      val report: Future[(String, Boolean)] =
+        checkArtifactChecksums(ourCertification.value, uri(url), publishedUrlByFilename)
+          .flatMap { result =>
+            showResult(log, result)
+            Future
+              .sequence {
+                result.verdicts
+                  .collect { case (filename: String, mismatch: Mismatch) =>
+                    val mavenArtifactUrl = publishedUrlByFilename(filename)
 
-                  val artifactName = mavenArtifactUrl.substring(mavenArtifactUrl.lastIndexOf('/') + 1)
+                    val artifactName = mavenArtifactUrl.substring(mavenArtifactUrl.lastIndexOf('/') + 1)
 
-                  val ourArtifact = ourArtifactFilesByFilename.get(filename) match {
-                    case None =>
-                      throw new IllegalStateException(
-                        s"Did not find local artifact for $artifactName ($mavenArtifactUrl)"
+                    val ourArtifact = ourArtifactFilesByFilename.get(filename) match {
+                      case None =>
+                        throw new IllegalStateException(
+                          s"Did not find local artifact for $artifactName ($mavenArtifactUrl)"
+                        )
+                      case Some(artifactFile) => toFile(artifactFile)
+                    }
+
+                    val downloadedArtifactsPath = targetDirPath.toPath.resolve("downloadedArtifact")
+                    downloadedArtifactsPath.toFile.mkdirs()
+                    val downloadedArtifact = downloadedArtifactsPath.resolve(artifactName)
+
+                    (mismatch.theirBytes match {
+                      case Some(savedBytes) =>
+                        Future.successful(savedBytes)
+                      case None =>
+                        http
+                          .run(GigahorseSupport.url(mavenArtifactUrl))
+                          .map(_.bodyAsByteBuffer.array())
+                    }).map { bytes =>
+                      Files.write(
+                        downloadedArtifact,
+                        bytes
                       )
-                    case Some(artifactFile) => toFile(artifactFile)
+
+                      val diffoscopeOutputDir =
+                        targetDirPath.toPath.resolve(s"reproducible-builds-diffoscope-output-$artifactName")
+                      val cmd = s"diffoscope --html-dir $diffoscopeOutputDir $ourArtifact $downloadedArtifact"
+                      new ProcessBuilder(
+                        "diffoscope",
+                        "--html-dir",
+                        diffoscopeOutputDir.toFile.getAbsolutePath,
+                        ourArtifact.getAbsolutePath,
+                        downloadedArtifact.toFile.getAbsolutePath
+                      ).start().waitFor()
+                      log.info(s"Running '$cmd' for a detailed report on the differences")
+                      s"See the [diffoscope report](reproducible-builds-diffoscope-output-$artifactName/index.html) for a detailed explanation " +
+                        " of the differences between the freshly built artifact and the one published to Maven Central"
+                    }.recover {
+                      case s: StatusError if s.status == 404 =>
+                        s"Unfortunately no artifact was found at $mavenArtifactUrl to diff against."
+                    }
                   }
+              }
+              .map(verdicts => (result.asMarkdown + "\n\n" + verdicts.mkString("", "\n\n", "\n\n"), result.ok))
+          }
 
-                  val downloadedArtifactsPath = targetDirPath.toPath.resolve("downloadedArtifact")
-                  downloadedArtifactsPath.toFile.mkdirs()
-                  val downloadedArtifact = downloadedArtifactsPath.resolve(artifactName)
+      val targetFilePath = targetDirPath.toPath.resolve("reproducible-builds-report.md")
 
-                  (mismatch.theirBytes match {
-                    case Some(savedBytes) =>
-                      Future.successful(savedBytes)
-                    case None =>
-                      http
-                        .run(GigahorseSupport.url(mavenArtifactUrl))
-                        .map(_.bodyAsByteBuffer.array())
-                  }).map { bytes =>
-                    Files.write(
-                      downloadedArtifact,
-                      bytes
-                    )
+      val (text, success) = Await.result(report, 50.minutes)
+      Files.write(targetFilePath, text.getBytes(Charset.forName("UTF-8")))
 
-                    val diffoscopeOutputDir =
-                      targetDirPath.toPath.resolve(s"reproducible-builds-diffoscope-output-$artifactName")
-                    val cmd = s"diffoscope --html-dir $diffoscopeOutputDir $ourArtifact $downloadedArtifact"
-                    new ProcessBuilder(
-                      "diffoscope",
-                      "--html-dir",
-                      diffoscopeOutputDir.toFile.getAbsolutePath,
-                      ourArtifact.getAbsolutePath,
-                      downloadedArtifact.toFile.getAbsolutePath
-                    ).start().waitFor()
-                    log.info(s"Running '$cmd' for a detailed report on the differences")
-                    s"See the [diffoscope report](reproducible-builds-diffoscope-output-$artifactName/index.html) for a detailed explanation " +
-                      " of the differences between the freshly built artifact and the one published to Maven Central"
-                  }.recover {
-                    case s: StatusError if s.status == 404 =>
-                      s"Unfortunately no artifact was found at $mavenArtifactUrl to diff against."
-                  }
-                }
-            }
-            .map(verdicts => result.asMarkdown + "\n\n" + verdicts.mkString("", "\n\n", "\n\n"))
-        }
-
-    val targetFilePath = targetDirPath.toPath.resolve("reproducible-builds-report.md")
-
-    Files.write(targetFilePath, Await.result(report, 50.minutes).getBytes(Charset.forName("UTF-8")))
-
-    toFileRef(targetFilePath.toFile)
-  }
+      if (success || !failOnMismatch) {
+        toFileRef(targetFilePath.toFile)
+      } else {
+        throw new MessageOnlyException("Check failed")
+      }
+    }
 
   private def fetchFileOrUrl(filenameOrUrl: String): Future[Array[Byte]] =
     if (filenameOrUrl.head == '/') {

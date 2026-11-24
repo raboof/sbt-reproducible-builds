@@ -17,11 +17,11 @@
 package net.bzzt.reproduciblebuilds
 
 case class SubstituteInfo(
-  organization: String,
-  packageName: String,
-  version: String,
-  crossPaths: Boolean,
-  sbtPlugin: Boolean,
-  scalaBinaryVersion: String,
-  sbtVersion: String
+    organization: String,
+    packageName: String,
+    version: String,
+    crossPaths: Boolean,
+    sbtPlugin: Boolean,
+    scalaBinaryVersion: String,
+    sbtVersion: String
 )

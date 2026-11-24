@@ -21,7 +21,13 @@ import sbt._
 import org.apache.ivy.core.IvyPatternHelper
 
 object UrlUtils {
-  private def substitute(pattern: String, info: SubstituteInfo, `type`: String, ext: String, conf: String, extraModuleAttributes: Map[String, String]): String = {
+  private def substitute(pattern: String,
+                         info: SubstituteInfo,
+                         `type`: String,
+                         ext: String,
+                         conf: String,
+                         extraModuleAttributes: Map[String, String]
+  ): String = {
     import scala.collection.JavaConverters._
     val extraArtifactAttributes = null
     IvyPatternHelper.substitute(
@@ -39,11 +45,10 @@ object UrlUtils {
   }
 
   private def substitutePattern(pattern: String, ext: String, classifier: Option[String], info: SubstituteInfo) = {
-    val extraModuleAttributes = {
+    val extraModuleAttributes =
       (if (info.crossPaths) Map("scalaVersion" -> info.scalaBinaryVersion) else Map.empty) ++
         (if (info.sbtPlugin) Map("sbtVersion" -> info.sbtVersion) else Map.empty) ++
         (classifier.map(c => ("classifier", c)).toMap)
-    }
 
     substitute(
       pattern,
@@ -51,11 +56,16 @@ object UrlUtils {
       ext,
       ext,
       Compile.name,
-      extraModuleAttributes,
+      extraModuleAttributes
     )
   }
 
-  def artifactUrl(resolver: Resolver, `type`: String, ext: String, classifier: Option[String], info: SubstituteInfo): String = {
+  def artifactUrl(resolver: Resolver,
+                  `type`: String,
+                  ext: String,
+                  classifier: Option[String],
+                  info: SubstituteInfo
+  ): String = {
     def resolvePattern(base: String, pattern: String): String = {
       val normBase = base.replace('\\', '/')
       if (normBase.endsWith("/") || pattern.startsWith("/")) normBase + pattern

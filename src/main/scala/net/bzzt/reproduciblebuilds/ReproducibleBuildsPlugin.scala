@@ -113,7 +113,12 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     )
   }
 
-  def artifactUrl(resolver: Resolver, `type`: String, ext: String, classifier: Option[String], info: SubstituteInfo): String =
+  def artifactUrl(resolver: Resolver,
+                  `type`: String,
+                  ext: String,
+                  classifier: Option[String],
+                  info: SubstituteInfo
+  ): String =
     UrlUtils.artifactUrl(resolver, `type`, ext, classifier, info)
 
   override lazy val buildSettings = Seq(

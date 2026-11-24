@@ -22,8 +22,6 @@ import sbt.Keys._
 import sbt._
 import sbtcompat.PluginCompat._
 
-import ReproducibleBuildsPlugin.reproducibleBuildsStrip
-
 /** Helper code for sbt-native-packager integration.
   *
   * The main ReproducibleBuildsPlugin code should not rely on any sbt-native-packager code, since this plugin should be

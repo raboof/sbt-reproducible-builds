@@ -16,9 +16,8 @@
 
 package net.bzzt.reproduciblebuilds
 
-import sbt._
-
 import org.apache.ivy.core.IvyPatternHelper
+import sbt._
 
 object UrlUtils {
   private def substitute(pattern: String,

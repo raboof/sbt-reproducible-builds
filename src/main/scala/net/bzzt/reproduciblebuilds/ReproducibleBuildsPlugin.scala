@@ -82,7 +82,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       (Compile / libraryDependencies).value,
       (artifactName / scalaVersion).value,
       (artifactName / scalaBinaryVersion).value,
-      sbtVersion.value
+      (pluginCrossBuild / sbtBinaryVersion).value
     )
   }
 
@@ -101,6 +101,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
   }
 
   lazy val substituteInfo = Def.task[SubstituteInfo] {
+    crossVersion.value
     SubstituteInfo(
       organization.value.replace('.', '/'),
       reproducibleBuildsPackageName.value,
@@ -108,56 +109,12 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       crossPaths.value,
       sbtPlugin.value,
       scalaBinaryVersion.value,
-      sbtBinaryVersion.value
+      (pluginCrossBuild / sbtBinaryVersion).value
     )
   }
 
-  def substitutePattern(pattern: String, ext: String, classifier: Option[String], info: SubstituteInfo) = {
-    val extraModuleAttributes = {
-      (if (info.crossPaths) Map("scalaVersion" -> info.scalaBinaryVersion) else Map.empty) ++
-        (if (info.sbtPlugin) Map("sbtVersion" -> info.sbtVersion) else Map.empty) ++
-        (classifier.map(c => ("classifier", c)).toMap)
-    }
-
-    UrlUtils.substitute(
-      pattern,
-      info,
-      ext,
-      ext,
-      Compile.name,
-      extraModuleAttributes,
-    )
-  }
-
-  def artifactUrl(resolver: Resolver, ext: String, classifier: Option[String], info: SubstituteInfo): String = {
-    def resolvePattern(base: String, pattern: String): String = {
-      val normBase = base.replace('\\', '/')
-      if (normBase.endsWith("/") || pattern.startsWith("/")) normBase + pattern
-      else normBase + "/" + pattern
-    }
-    resolver match {
-      case repository: MavenRepository =>
-        val pattern = resolvePattern(
-          repository.root,
-          "[organisation]/[module](_[scalaVersion])(_[sbtVersion])/[revision]/[artifact](_[scalaVersion])(_[sbtVersion])-[revision](-[classifier]).[ext]"
-        )
-        substitutePattern(pattern, ext, classifier, info)
-      case repository: PatternsBasedRepository =>
-        val pattern = repository.patterns.artifactPatterns.headOption
-          .orElse(
-            repository.patterns.ivyPatterns.headOption
-          )
-          .getOrElse(
-            throw new IllegalArgumentException("Expected at least a single artifact pattern")
-          )
-        substitutePattern(pattern, ext, classifier, info)
-      case _: ChainedResolver =>
-        throw new IllegalArgumentException("Not yet implemented")
-
-      // TODO: we don't have support for `RawRepository`, that would
-      // make things more difficult
-    }
-  }
+  def artifactUrl(resolver: Resolver, `type`: String, ext: String, classifier: Option[String], info: SubstituteInfo): String =
+    UrlUtils.artifactUrl(resolver, `type`, ext, classifier, info)
 
   override lazy val buildSettings = Seq(
     reproducibleBuildsCheckResolver := Def.uncached {
@@ -182,7 +139,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
     ReproducibleBuilds / artifact := {
       val name =
         if (sbtPlugin.value)
-          s"${reproducibleBuildsPackageName.value}_${scalaBinaryVersion.value}_${sbtBinaryVersion.value}"
+          s"${reproducibleBuildsPackageName.value}_${scalaBinaryVersion.value}_${(pluginCrossBuild / sbtBinaryVersion).value}"
         else
           reproducibleBuildsPackageName.value
       Artifact(name, "buildinfo", "buildinfo")
@@ -243,7 +200,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       val pTo = (ReproducibleBuilds / publishTo).value.getOrElse(DefaultMavenRepository)
       val info = substituteInfo.value
       Def.task {
-        val prefix = artifactUrl(pTo, "buildinfo", None, info)
+        val prefix = artifactUrl(pTo, "buildinfo", "buildinfo", None, info)
         val log = streams.value.log
         log.info(s"Discovering certifications at [$prefix]")
         // TODO add Accept header to request JSON-formatted
@@ -382,7 +339,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
 
   private def reproducibleBuildsCheckImpl(resolver: Resolver, info: SubstituteInfo, failOnMismatch: Boolean) =
     Def.task {
-      val url = artifactUrl(resolver, "buildinfo", None, info)
+      val url = artifactUrl(resolver, "buildinfo", "buildinfo", None, info)
 
       val log = streams.value.log
       log.info(s"Downloading certification from [$url]")
@@ -392,7 +349,7 @@ object ReproducibleBuildsPlugin extends AutoPlugin {
       val ourArtifacts = (Compile / packagedArtifacts).value
       val ourArtifactFilesByFilename = ourArtifacts.map { case (_, file) => (file.name, file) }.toMap
       val publishedUrlByFilename = (Compile / packagedArtifacts)
-        .map(m => m.keys.map(a => (m(a).name, artifactUrl(resolver, a.extension, a.classifier, info))))
+        .map(m => m.keys.map(a => (m(a).name, artifactUrl(resolver, a.`type`, a.extension, a.classifier, info))))
         .value
         .toMap
 

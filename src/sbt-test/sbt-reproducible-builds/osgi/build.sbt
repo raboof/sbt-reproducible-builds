@@ -12,4 +12,4 @@ OsgiKeys.exportPackage := Seq("net.bzzt")
 // we need to explicitly post-process it:
 Compile / packageBin := ReproducibleBuildsPlugin.postProcessJar(OsgiKeys.bundle.value)
 
-ThisBuild / publishTo := Some(MavenCache("local-maven", file("expected")))
+ThisBuild / publishTo := Some(MavenCache("local-maven", file(s"expected_${sbtBinaryVersion.value}")))

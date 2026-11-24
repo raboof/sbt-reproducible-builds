@@ -7,4 +7,4 @@ enablePlugins(ReproducibleBuildsPlugin)
 
 addArtifact(Def.setting((Compile / assembly / artifact).value.withClassifier(Some("assembly"))), assembly)
 
-ThisBuild / publishTo := Some(MavenCache("local-maven", file("expected")))
+ThisBuild / publishTo := Some(MavenCache("local-maven", file(s"expected_${sbtBinaryVersion.value}")))

@@ -21,7 +21,7 @@ val sbtPgpVersion = "1.1.2"
 lazy val scala212 = "2.12.21"
 // sbt 2.1.0 is published against 3.9.0, so we need to align with that
 lazy val scala3 = "3.9.0"
-ThisBuild / crossScalaVersions := Seq(scala212 /*, scala3*/ )
+ThisBuild / crossScalaVersions := Seq(scala212, scala3)
 ThisBuild / scalaVersion := crossScalaVersions.value.head
 
 enablePlugins(ReproducibleBuildsPlugin)
